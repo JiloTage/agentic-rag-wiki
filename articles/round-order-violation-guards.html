@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Round Order Violation Guards - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Round Order Violation Guards
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Round Order Violation Guards</h1>
+      <div class="article-meta">最終更新: 2026-03-24 19:00 JST</div>
+      <div class="article-summary"><b>Round Order Violation Guards</b> は、<a href="retrieval-round-policy.html">Retrieval Round Policy</a> が定める検索ラウンドの進行順序（mandatory_broad → optional_narrowing → optional_relaxed）を飛ばせないようにするガード（安全装置）である。<code>allowed_next</code> テーブルに基づいて次に許可される段階を制限し、順序を逸脱した遷移は <code>policy_order_violation</code> として検知され、その検索は失敗扱いになる。</div>
+
+      <p><b>Round Order Violation Guards</b> は、<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の検索処理において、ラウンド（検索の段階）の順番を厳密に守らせる仕組みである。<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>（ポリシーに従って検索を制御する設計）の一部として動作し、<code>mandatory_broad</code>（広く探す段階）→ <code>optional_narrowing</code>（絞り込む段階）→ <code>optional_relaxed</code>（条件をゆるめる段階）という決められた順番を飛ばすことを許さない。たとえば「結果が少ないから最初から条件をゆるめよう」という場当たり的な判断をモデルが行っても、このガードが介入して <code>policy_order_violation</code>（順序違反）として検出・拒否する。</p>
+
+      <h2 id="mechanism">ガードの仕組み</h2>
+      <p>ガードの核となるのは <code>allowed_next</code> テーブルである。これは各ラウンド段階に対して「次に遷移してよい段階」を定義した対応表で、以下のような構造を持つ。</p>
+      <ul>
+        <li><code>None</code>（初期状態）→ <code>mandatory_broad</code> のみ許可</li>
+        <li><code>mandatory_broad</code> → <code>mandatory_broad</code> または <code>optional_narrowing</code> を許可</li>
+        <li><code>optional_narrowing</code> → <code>optional_narrowing</code> または <code>optional_relaxed</code> を許可</li>
+        <li><code>optional_relaxed</code> → <code>optional_relaxed</code> のみ許可（後戻りも不可）</li>
+      </ul>
+      <p>検索の各ラウンドが開始される前に、<code>resolve_round_policy()</code> が現在の段階と次に要求された段階を <code>allowed_next</code> テーブルと照合する。一致しなければ即座に <code>policy_order_violation</code> を発行し、そのラウンドの検索は実行されない。このチェックは <a href="retrieval-round-policy.html">Retrieval Round Policy</a> の <code>resolve_round_policy()</code> 内で最初に実行されるため、予算計算やフィルタ構築よりも先に順序の正当性が確認される。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 420" width="780" height="420">
+          <defs>
+            <marker id="arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+            <marker id="arrow-ng" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#d33" />
+            </marker>
+          </defs>
+
+          <!-- Boxes -->
+          <rect x="40" y="30" width="200" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="140" y="58" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">None（初期状態）</text>
+          <text x="140" y="80" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">検索未開始</text>
+
+          <rect x="300" y="30" width="200" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="400" y="58" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">mandatory_broad</text>
+          <text x="400" y="80" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">広い検索（必須）</text>
+
+          <rect x="300" y="170" width="200" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="400" y="198" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">optional_narrowing</text>
+          <text x="400" y="220" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">絞り込み（任意）</text>
+
+          <rect x="300" y="310" width="200" height="70" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="400" y="338" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">optional_relaxed</text>
+          <text x="400" y="360" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">条件緩和（任意）</text>
+
+          <!-- Valid transitions (blue arrows) -->
+          <line x1="240" y1="65" x2="298" y2="65" stroke="#36c" stroke-width="2" marker-end="url(#arrow-ok)" />
+          <text x="270" y="57" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#36c">OK</text>
+
+          <path d="M 500 65 Q 540 65 540 100 Q 540 135 500 135 L 500 100" fill="none" stroke="#36c" stroke-width="2" marker-end="url(#arrow-ok)" />
+          <text x="558" y="100" font-family="sans-serif" font-size="10" fill="#36c">OK</text>
+
+          <line x1="400" y1="100" x2="400" y2="168" stroke="#36c" stroke-width="2" marker-end="url(#arrow-ok)" />
+          <text x="415" y="138" font-family="sans-serif" font-size="10" fill="#36c">OK</text>
+
+          <path d="M 500 205 Q 540 205 540 240 Q 540 275 500 275 L 500 240" fill="none" stroke="#36c" stroke-width="2" marker-end="url(#arrow-ok)" />
+          <text x="558" y="240" font-family="sans-serif" font-size="10" fill="#36c">OK</text>
+
+          <line x1="400" y1="240" x2="400" y2="308" stroke="#36c" stroke-width="2" marker-end="url(#arrow-ok)" />
+          <text x="415" y="278" font-family="sans-serif" font-size="10" fill="#36c">OK</text>
+
+          <path d="M 500 345 Q 540 345 540 380 Q 540 400 500 400 L 500 375" fill="none" stroke="#36c" stroke-width="2" marker-end="url(#arrow-ok)" />
+          <text x="558" y="378" font-family="sans-serif" font-size="10" fill="#36c">OK</text>
+
+          <!-- Invalid transitions (red dashed arrows) -->
+          <line x1="140" y1="100" x2="300" y2="195" stroke="#d33" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-ng)" />
+          <text x="185" y="165" font-family="sans-serif" font-size="10" fill="#d33" font-weight="bold">VIOLATION</text>
+
+          <line x1="140" y1="100" x2="300" y2="335" stroke="#d33" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-ng)" />
+          <text x="155" y="250" font-family="sans-serif" font-size="10" fill="#d33" font-weight="bold">VIOLATION</text>
+
+          <line x1="350" y1="100" x2="350" y2="308" stroke="#d33" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-ng)" />
+          <text x="335" y="210" font-family="sans-serif" font-size="10" fill="#d33" font-weight="bold">VIOLATION</text>
+
+          <!-- Legend -->
+          <rect x="600" y="150" width="160" height="90" rx="8" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="1" />
+          <text x="680" y="172" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#202122">凡例</text>
+          <line x1="615" y1="185" x2="645" y2="185" stroke="#36c" stroke-width="2" />
+          <text x="655" y="189" font-family="sans-serif" font-size="11" fill="#202122">許可される遷移</text>
+          <line x1="615" y1="210" x2="645" y2="210" stroke="#d33" stroke-width="2" stroke-dasharray="6,4" />
+          <text x="655" y="214" font-family="sans-serif" font-size="11" fill="#202122">順序違反（拒否）</text>
+        </svg>
+        <div class="diagram-caption">allowed_next テーブルに基づくラウンド遷移図。青い実線は許可される遷移、赤い破線は policy_order_violation として拒否される遷移を示す。</div>
+      </div>
+
+      <h2 id="detection">違反の検知と記録</h2>
+      <p>順序違反が検知されると、ガードは以下の情報を <code>validation_log</code>（検証ログ）に記録する。</p>
+      <ul>
+        <li><code>violation_type</code>: <code>"policy_order_violation"</code> という固定の種別</li>
+        <li><code>current_phase</code>: 違反が発生した時点のラウンド段階</li>
+        <li><code>requested_phase</code>: 要求された（許可されなかった）ラウンド段階</li>
+        <li><code>allowed_phases</code>: その時点で許可されていた段階の一覧</li>
+        <li><code>round_index</code>: 何回目の検索で違反が起きたか</li>
+      </ul>
+      <p>この記録は <a href="workspace-trace-ui.html">Workspace Trace UI</a>（トレース表示画面）で確認できる。運用チームは、違反が頻発している場合に <a href="retrieval-round-policy.html">Retrieval Round Policy</a> の設定や、モデルのプロンプト設計を見直す手がかりにする。また、<a href="violation-alert-routing.html">Violation Alert Routing</a>（違反アラートの配信ルール）を設定すれば、特定の違反パターンが閾値を超えた際に通知を受け取ることもできる。</p>
+
+      <h2 id="failure-handling">失敗扱いの挙動</h2>
+      <p><code>policy_order_violation</code> が発行された検索ラウンドは、結果を返さずに「失敗」として扱われる。ただし、検索プロセス全体が即座に中止されるわけではない。<code>ToolRoundExecutor</code> は違反が起きたラウンドをスキップし、残りの検索予算がまだあれば次のラウンドに進むことを試みる。</p>
+      <p>ここで重要なのは、違反後の「次のラウンド」が <code>allowed_next</code> テーブル上で正当な遷移である場合のみ実行されるということである。たとえば、<code>mandatory_broad</code> から <code>optional_relaxed</code> への飛び越しが拒否された場合、次に <code>optional_narrowing</code> を要求すればそれは正当な遷移として許可される。</p>
+      <p>検索予算の管理については <a href="retrieval-budgeting.html">Retrieval Budgeting</a>（検索予算の配分）を、違反発生時の予算消費ルールについては <a href="violation-budget-accounting.html">Violation Budget Accounting</a>（違反時の予算計上ルール）を参照されたい。違反で消費された予算を回復するかどうかは <a href="optimization-priority-modes.html">Optimization Priority Modes</a>（最適化の方針モード）の設定に依存する。</p>
+
+      <h2 id="env-config">環境変数による制御</h2>
+      <p>ガードの挙動は環境変数で細かく制御できる。主な設定項目は以下のとおりである。</p>
+      <ul>
+        <li><code>ROUND_GUARD_STRICT_MODE</code>: <code>true</code> の場合、違反が 1 回でも発生すると以降のラウンドをすべて中止する（デフォルトは <code>false</code>）</li>
+        <li><code>ROUND_GUARD_LOG_LEVEL</code>: 違反ログの詳細度を <code>minimal</code> / <code>standard</code> / <code>verbose</code> から選択する</li>
+        <li><code>ROUND_GUARD_ALLOWED_OVERRIDES</code>: 特定のテスト環境で遷移制約を一部緩和するための設定（本番環境では無効化が推奨される）</li>
+      </ul>
+      <p>これらの環境変数は <a href="env-contract-management.html">環境変数コントラクト管理</a>（設定の一元管理）で contract.json に定義され、<a href="env-consistency-checks.html">Env Consistency Checks</a>（環境変数の整合性検証）によってプロファイル間の不整合がないか検証される。間違った設定でガードが無効化されると順序制約の意味がなくなるため、CI パイプラインでの検証が不可欠である。</p>
+
+      <h2 id="testing">テストとデバッグ</h2>
+      <p>ガードの正しさを確認するために、以下のテスト戦略が用いられる。</p>
+      <h3 id="unit-tests">ユニットテスト</h3>
+      <p><code>allowed_next</code> テーブルの全遷移パターン（許可・拒否の両方）を網羅するテストを用意する。特に境界ケース（同じ段階への繰り返し、最終段階からの遷移など）を重点的にテストする。</p>
+      <h3 id="integration-tests">統合テスト</h3>
+      <p>実際の検索フローを模した統合テストで、ガードが <code>ToolRoundExecutor</code> と正しく連携するかを検証する。違反発生時にログが正しく記録されるか、後続のラウンドが適切にスキップまたは実行されるかを確認する。</p>
+      <h3 id="trace-debugging">トレースによるデバッグ</h3>
+      <p><a href="workspace-trace-ui.html">Workspace Trace UI</a> のラウンド表示で、各ラウンドの遷移判定結果をリアルタイムに確認できる。違反が発生した場合は赤色で強調表示され、<code>allowed_phases</code> と <code>requested_phase</code> の差分が一目でわかる。<a href="guard-replay-simulator.html">Guard Replay Simulator</a>（ガード再現シミュレータ）を使えば、過去のセッションのラウンド遷移を再現して原因を特定することもできる。</p>
+
+      <h2 id="design-rationale">設計思想</h2>
+      <p>このガードが存在する最大の理由は、「検索の質よりも先に、ルールどおりに動いているかを守る」という方針にある。LLM（大規模言語モデル）が検索条件を自律的に決める <a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> のような仕組みでは、モデルが効率を優先して段階を飛ばす判断をすることがある。しかし、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の設計思想では、mandatory filter（必須フィルタ）を飛ばすことは検索結果のブレではなくルール違反に直結する。</p>
+      <p>Round Order Violation Guards は、この「ルール優先」の原則を実行時に強制する最後の砦である。<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>（文書取り込みパイプライン）で付与されたメタデータの品質がばらついていても、ガードが順序を守らせることで、少なくとも「広く探してから絞り込む」という基本戦略が崩れないことを保証する。</p>
+      <p>将来的には <a href="adaptive-guard-relaxation.html">Adaptive Guard Relaxation</a>（適応的なガード緩和）のように、過去の実績に基づいて段階のスキップを安全に許可する仕組みも検討されているが、現時点では厳格な順序制約が維持されている。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#mechanism">ガードの仕組み</a></li>
+          <li><a href="#detection">違反の検知と記録</a></li>
+          <li><a href="#failure-handling">失敗扱いの挙動</a></li>
+          <li><a href="#env-config">環境変数による制御</a></li>
+          <li><a href="#testing">テストとデバッグ</a>
+            <ul>
+              <li><a href="#unit-tests">ユニットテスト</a></li>
+              <li><a href="#integration-tests">統合テスト</a></li>
+              <li><a href="#trace-debugging">トレースによるデバッグ</a></li>
+            </ul>
+          </li>
+          <li><a href="#design-rationale">設計思想</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+          <li><a href="optimization-priority-modes.html">Optimization Priority Modes</a></li>
+          <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+          <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+          <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+        <li><a href="optimization-priority-modes.html">Optimization Priority Modes</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="retrieval-budgeting.html">Retrieval Budgeting</a></li>
+        <li><a href="violation-alert-routing.html">Violation Alert Routing</a></li>
+        <li><a href="violation-budget-accounting.html">Violation Budget Accounting</a></li>
+        <li><a href="guard-replay-simulator.html">Guard Replay Simulator</a></li>
+        <li><a href="adaptive-guard-relaxation.html">Adaptive Guard Relaxation</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

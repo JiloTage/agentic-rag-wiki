@@ -503,7 +503,7 @@
         "context-full-construction",
         "docling-hybrid-chunking"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
     },
     "workspace-trace-ui": {
       "slug": "workspace-trace-ui",
@@ -537,9 +537,38 @@
         "project-diana-agentic-rag",
         "retrieval-round-policy"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
+    },
+    "round-order-violation-guards": {
+      "slug": "round-order-violation-guards",
+      "title": "Round Order Violation Guards",
+      "filename": "articles/round-order-violation-guards.html",
+      "summary": "Round Order Violation Guards は、allowed_next テーブルに基づいて検索ラウンドの遷移順序（mandatory_broad → optional_narrowing → optional_relaxed）を強制するガードである。順序を逸脱した遷移は policy_order_violation として検知され、その検索は失敗扱いになる。",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "updated_at": "2026-03-24T19:00:00+09:00",
+      "origin": "expanded",
+      "source_id": "retrieval-round-policy",
+      "links_to": [
+        "adaptive-guard-relaxation",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "guard-replay-simulator",
+        "optimization-priority-modes",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-budgeting",
+        "retrieval-round-policy",
+        "violation-alert-routing",
+        "violation-budget-accounting",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "retrieval-round-policy"
+      ],
+      "expansion_status": "done"
     }
   },
   "root_id": "project-diana-agentic-rag",
-  "total_count": 16
+  "total_count": 17
 }
