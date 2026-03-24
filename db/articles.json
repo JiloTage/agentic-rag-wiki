@@ -28,6 +28,7 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "retrieval-round-policy",
         "split-deployment-rag"
@@ -64,6 +65,7 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "retrieval-round-policy"
@@ -270,7 +272,7 @@
         "project-diana-agentic-rag",
         "split-deployment-rag"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
     },
     "azure-container-apps-topology": {
       "slug": "azure-container-apps-topology",
@@ -304,7 +306,7 @@
         "project-diana-agentic-rag",
         "split-deployment-rag"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
     },
     "env-consistency-checks": {
       "slug": "env-consistency-checks",
@@ -341,9 +343,65 @@
         "retrieval-round-policy",
         "split-deployment-rag"
       ],
+      "expansion_status": "done"
+    },
+    "picture-ocr-stage": {
+      "slug": "picture-ocr-stage",
+      "title": "Picture OCR Stage",
+      "filename": "articles/picture-ocr-stage.html",
+      "summary": "Picture OCR Stage は、ドキュメント内の画像から文字を読み取る処理ステージである。parse ステージで抽出された画像に対して Azure Document Intelligence の OCR を実行し、読み取ったテキストを後続の chunk・metadata ステージへ渡す。選択的 OCR と部分成功許容により、コスト効率と耐障害性を両立する。",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "updated_at": "2026-03-24T18:30:00+09:00",
+      "origin": "expanded",
+      "source_id": "document-ingestion-pipeline",
+      "links_to": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "parse-mode-fallback",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline"
+      ],
+      "expansion_status": "done"
+    },
+    "context-full-construction": {
+      "slug": "context-full-construction",
+      "title": "Context Full Construction",
+      "filename": "articles/context-full-construction.html",
+      "summary": "Context Full Construction は、チャンクの短い本文だけでなく、見出し境界まで前後に広げた「文脈つき全文」を組み立てる処理である。この context_full フィールドにより、回答生成時に必要十分な背景情報を LLM へ渡せるようになる。",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "updated_at": "2026-03-24T18:30:00+09:00",
+      "origin": "expanded",
+      "source_id": "docling-hybrid-chunking",
+      "links_to": [
+        "chunk-oversize-splitting",
+        "context-deduplication-merge",
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "document-type-aware-context",
+        "env-contract-management",
+        "picture-ocr-stage",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-budgeting",
+        "retrieval-round-policy",
+        "search-summary-enrichment",
+        "semantic-paragraph-segmentation",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "docling-hybrid-chunking"
+      ],
       "expansion_status": "pending"
     }
   },
   "root_id": "project-diana-agentic-rag",
-  "total_count": 10
+  "total_count": 12
 }

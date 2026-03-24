@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Picture OCR Stage - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Picture OCR Stage
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Picture OCR Stage</h1>
+      <div class="article-meta">最終更新: 2026-03-24 18:30 JST</div>
+      <div class="article-summary">Picture OCR Stage は、ドキュメント内の画像から文字を読み取る処理ステージです。parse ステージで抽出された画像に対して OCR（光学文字認識）を実行し、読み取ったテキストを後続の chunk・metadata ステージへ渡します。画像に埋め込まれた表やキャプションも検索対象にできるため、retrieval の精度向上に貢献します。</div>
+
+      <p><b>Picture OCR Stage</b> は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の中で、画像に含まれる文字を読み取るステージです。PDF やスライドには、グラフ・表・スクリーンショットなど、本文とは別に画像として埋め込まれた情報が多くあります。これらの画像内テキストを見逃すと、検索時にヒットしない「見えないデータ」になってしまいます。Picture OCR Stage はこの問題を解決するために、parse ステージの直後に実行されます。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では <code>job_src.picture_ocr</code> モジュールがこの処理を担当します。</p>
+
+      <h2 id="position-in-pipeline">パイプライン内の位置づけ</h2>
+      <p>Picture OCR Stage は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の parse ステージと chunk ステージの間に位置します。parse ステージが文書構造を解析し、本文テキストと画像を分離したあと、画像だけを対象に OCR を実行します。OCR の結果は、画像のメタデータに <code>ocr_text</code> フィールドとして付与されます。その後、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> がチャンクを作る際に、この <code>ocr_text</code> を <code>search_text</code> や <code>context_full</code> に組み込みます。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 260" width="820" height="260">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <!-- Parse -->
+          <rect x="30" y="90" width="120" height="56" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="90" y="123" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">parse</text>
+
+          <!-- Split arrows -->
+          <line x1="150" y1="118" x2="200" y2="60" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="150" y1="118" x2="200" y2="178" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+
+          <!-- Text path -->
+          <rect x="200" y="150" width="130" height="56" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="265" y="183" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">本文テキスト</text>
+
+          <!-- Image path -->
+          <rect x="200" y="32" width="130" height="56" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="265" y="65" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">画像群</text>
+
+          <!-- Picture OCR -->
+          <line x1="330" y1="60" x2="380" y2="60" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <rect x="380" y="32" width="160" height="56" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2.5" />
+          <text x="460" y="58" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">Picture OCR</text>
+          <text x="460" y="76" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#202122">Stage</text>
+
+          <!-- Merge arrows -->
+          <line x1="540" y1="60" x2="590" y2="118" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="330" y1="178" x2="590" y2="118" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+
+          <!-- Chunk -->
+          <rect x="590" y="90" width="120" height="56" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="650" y="123" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">chunk</text>
+
+          <!-- Labels -->
+          <text x="175" y="48" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#36c">画像</text>
+          <text x="175" y="170" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#36c">テキスト</text>
+          <text x="570" y="80" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#36c">ocr_text</text>
+          <text x="460" y="218" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#36c">合流</text>
+        </svg>
+        <div class="diagram-caption">parse が出力した画像群だけを Picture OCR Stage が処理し、読み取ったテキストを本文と合流させて chunk へ渡します。</div>
+      </div>
+
+      <h2 id="ocr-engine">OCR エンジンと処理方式</h2>
+      <p>Picture OCR Stage では、Azure Document Intelligence（旧 Azure Form Recognizer）の OCR API を使って画像からテキストを読み取ります。この API は、印刷文字だけでなく手書き文字や表構造も認識できます。処理の流れは次のとおりです。</p>
+      <ol>
+        <li>parse ステージが出力した画像一覧を受け取る</li>
+        <li>各画像を Azure Document Intelligence へ送信する</li>
+        <li>返ってきたテキストを、画像ごとに <code>ocr_text</code> フィールドへ格納する</li>
+        <li>表構造が検出された場合は、Markdown テーブル形式に変換して保持する</li>
+      </ol>
+      <p>OCR の実行には API 呼び出しのコストと時間がかかるため、<a href="parse-mode-fallback.html">Parse Mode Fallback</a> と連携して、必要な画像だけに OCR を適用する仕組みになっています。<code>parse_mode=auto</code> のとき、本文テキストが十分に抽出できたページでも、画像が含まれていれば Picture OCR Stage は実行されます。</p>
+
+      <h2 id="selective-ocr">選択的 OCR の仕組み</h2>
+      <p>すべての画像に OCR をかけると、コストと時間が大きくなります。そこで Picture OCR Stage は、次の基準で OCR の要否を判定します。</p>
+      <ul>
+        <li><strong>サイズフィルタ</strong>: 極端に小さい画像（アイコン、装飾画像など）は OCR をスキップする</li>
+        <li><strong>形式フィルタ</strong>: ベクター画像や透過 PNG のうち、テキストを含まない可能性が高いものを除外する</li>
+        <li><strong>重複検出</strong>: 同一ページ内に類似の画像が複数あるとき、1つだけ OCR を実行して結果を共有する</li>
+      </ul>
+      <p>この選択的 OCR により、全画像に OCR をかける場合に比べて処理時間とコストを大幅に削減できます。フィルタの閾値は <a href="env-contract-management.html">環境変数コントラクト管理</a> の設定で調整可能です。</p>
+
+      <h3 id="ocr-text-normalization">OCR テキストの正規化</h3>
+      <p>OCR が返すテキストはそのままでは検索に適さない場合があります。Picture OCR Stage は、読み取ったテキストに次の正規化処理を施します。</p>
+      <ul>
+        <li>不要な改行・空白の除去</li>
+        <li>表構造の Markdown テーブルへの変換</li>
+        <li>文字化けが疑われる文字列の除去（confidence スコアが閾値未満のセグメント）</li>
+        <li>言語検出に基づく適切なトークン分割</li>
+      </ul>
+      <p>正規化されたテキストは <code>ocr_text</code> としてチャンクに組み込まれ、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> で <code>search_text</code> の一部になります。</p>
+
+      <h2 id="error-handling">エラー処理と耐障害性</h2>
+      <p>OCR API の呼び出しは外部サービスへの依存であるため、タイムアウトやレート制限が発生する可能性があります。Picture OCR Stage では次のエラー処理を実装しています。</p>
+      <ul>
+        <li><strong>リトライ</strong>: 一時的なエラー（429 Too Many Requests、503 など）に対して指数バックオフでリトライする</li>
+        <li><strong>部分成功</strong>: 一部の画像で OCR が失敗しても、成功した画像の結果は保持して処理を続行する</li>
+        <li><strong>エラーコード</strong>: 全画像の OCR が失敗した場合は <code>picture_ocr_total_failure</code> を記録するが、パイプライン全体は停止しない</li>
+      </ul>
+      <p>この「部分成功を許容する」設計は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の metadata ステージと同じ思想です。OCR テキストは「あると検索精度が上がるが、なくても致命的ではない」データなので、失敗時にパイプライン全体を止めるのは過剰です。エラー情報は callback（結果通知）に含まれるため、<a href="workspace-trace-ui.html">Workspace Trace UI</a> で事後確認できます。</p>
+
+      <h2 id="chunk-integration">チャンクへの統合</h2>
+      <p>Picture OCR Stage が出力した <code>ocr_text</code> は、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> のチャンク生成プロセスで活用されます。具体的には次のように統合されます。</p>
+      <ul>
+        <li><code>search_text</code>: チャンクの検索用テキストに <code>ocr_text</code> を連結する。これにより、画像内のテキストでも全文検索がヒットする</li>
+        <li><code>context_full</code>: チャンクの文脈情報に画像の説明として <code>ocr_text</code> を含める</li>
+        <li><code>picture_texts</code>: OCR 結果の原文を保持する配列フィールド。デバッグや再処理に使う</li>
+      </ul>
+      <p>この統合により、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> でユーザーが画像内の用語を検索したとき、該当するチャンクが正しくヒットするようになります。たとえば、スライド内の図表に書かれた数値やラベルを検索キーワードとして使えます。</p>
+
+      <h2 id="configuration">設定と環境変数</h2>
+      <p>Picture OCR Stage の動作は、<a href="env-contract-management.html">環境変数コントラクト管理</a> で定義された環境変数で制御します。主な設定項目は以下のとおりです。</p>
+      <ul>
+        <li><code>AZURE_DOC_INTELLIGENCE_ENDPOINT</code>: Azure Document Intelligence のエンドポイント URL</li>
+        <li><code>AZURE_DOC_INTELLIGENCE_KEY</code>: 認証キー</li>
+        <li><code>PICTURE_OCR_MIN_SIZE</code>: OCR を実行する画像の最小サイズ（ピクセル）</li>
+        <li><code>PICTURE_OCR_CONFIDENCE_THRESHOLD</code>: OCR 結果を採用する最低信頼度スコア</li>
+        <li><code>PICTURE_OCR_TIMEOUT_SEC</code>: 1 画像あたりの OCR タイムアウト（秒）</li>
+      </ul>
+      <p>これらの設定は <a href="split-deployment-rag.html">Split Deployment RAG</a> の job プロファイルにのみ含まれ、API や Web UI のプロファイルには不要です。<a href="env-consistency-checks.html">Env Consistency Checks</a> で、job プロファイルに必要な設定が漏れていないかを検証できます。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#position-in-pipeline">パイプライン内の位置づけ</a></li>
+          <li><a href="#ocr-engine">OCR エンジンと処理方式</a></li>
+          <li><a href="#selective-ocr">選択的 OCR の仕組み</a></li>
+          <li class="toc-h3"><a href="#ocr-text-normalization">OCR テキストの正規化</a></li>
+          <li><a href="#error-handling">エラー処理と耐障害性</a></li>
+          <li><a href="#chunk-integration">チャンクへの統合</a></li>
+          <li><a href="#configuration">設定と環境変数</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+          <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+          <li><a href="parse-mode-fallback.html">Parse Mode Fallback</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+          <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="parse-mode-fallback.html">Parse Mode Fallback</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Context Full Construction - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Context Full Construction
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Context Full Construction</h1>
+      <div class="article-meta">最終更新: 2026-03-24 18:30 JST</div>
+      <div class="article-summary">Context Full Construction は、チャンクの短い本文だけでなく、見出し境界まで前後に広げた「文脈つき全文」を組み立てる処理である。この context_full フィールドにより、回答生成時に必要十分な背景情報を LLM へ渡せるようになる。</div>
+
+      <p><b>Context Full Construction</b> は、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> の後段で各チャンクに付与される <code>context_full</code> フィールドを組み立てる処理です。<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の中で、チャンク分割によって得られた短い本文だけでは回答生成に必要な背景が不足するため、もとの Markdown 文書から見出し（heading）の境界まで前後に広げたテキストを切り出して添付します。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では、この仕組みによって検索精度と回答品質の両立を図っています。</p>
+
+      <h2 id="purpose">なぜ context_full が必要か</h2>
+      <p>チャンク分割では、検索用のベクトル化に適した短いテキスト（<code>search_text</code>）を作ります。しかし短いテキストだけを LLM（大規模言語モデル）に渡すと、前後の文脈が欠けているために回答が不正確になったり、引用として不自然になったりします。かといって文書全体を渡すとトークン数が膨大になり、コストも応答時間も増えます。</p>
+      <p>そこで <code>context_full</code> は「短すぎず長すぎない、回答にちょうどよい長さの文脈」を提供します。具体的には、チャンクが属する節（セクション）の見出し境界まで Markdown 原文を広げ、回答生成やファクトチェックに必要な周辺情報をまとめて保持します。この考え方は <a href="search-summary-enrichment.html">Search Summary Enrichment</a> の要約付与と補完関係にあり、要約は検索の入口、context_full は回答生成の素材という役割分担です。</p>
+
+      <h2 id="algorithm">組み立てアルゴリズム</h2>
+      <p>context_full の組み立ては、次のステップで行われます。</p>
+      <h3 id="algorithm-step1">ステップ1: Markdown 変換と見出し境界の特定</h3>
+      <p>まず、Docling が解析した文書構造から Markdown テキストを生成します。次に、チャンクの元テキストが含まれる位置を特定し、そのテキストを囲む直近の見出し（H1〜H3）の位置を上下に探します。これが context_full の切り出し範囲になります。</p>
+      <h3 id="algorithm-step2">ステップ2: 前後拡張とトリミング</h3>
+      <p>見出し境界まで広げたテキストがトークン上限を超える場合は、文の区切り（句点やピリオド）で短くします。このとき、チャンク本文を含む中心部分は必ず残し、前後を対称的に削ります。<a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a> と同様にトークン数ベースで判定するため、マルチバイト文字の多い日本語文書でも安定して動作します。</p>
+      <h3 id="algorithm-step3">ステップ3: メタデータの付与</h3>
+      <p>完成した context_full には、元の見出し階層（<code>search_headings</code>）とページ番号が付与されます。これにより、回答生成時に「どの章・節から引用したか」をたどれるようになります。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 420" width="820" height="420">
+          <defs>
+            <marker id="cf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <!-- Markdown document -->
+          <rect x="30" y="30" width="180" height="360" rx="8" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="120" y="22" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#202122">Markdown 文書</text>
+          <rect x="45" y="50" width="150" height="24" rx="4" fill="#eaf3ff" stroke="#36c" stroke-width="1.5" />
+          <text x="120" y="66" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#202122">## 見出し A</text>
+          <rect x="45" y="82" width="150" height="40" rx="4" fill="#fff" stroke="#a2a9b1" stroke-width="1" />
+          <text x="120" y="105" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">段落テキスト...</text>
+          <rect x="45" y="130" width="150" height="24" rx="4" fill="#eaf3ff" stroke="#36c" stroke-width="1.5" />
+          <text x="120" y="146" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#202122">## 見出し B</text>
+          <rect x="45" y="162" width="150" height="40" rx="4" fill="#fff" stroke="#a2a9b1" stroke-width="1" />
+          <text x="120" y="185" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">段落テキスト...</text>
+          <!-- Chunk highlight -->
+          <rect x="55" y="170" width="130" height="20" rx="3" fill="#ffec99" stroke="#e6a700" stroke-width="1.5" opacity="0.7" />
+          <text x="120" y="184" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#202122">← チャンク本文</text>
+          <rect x="45" y="210" width="150" height="40" rx="4" fill="#fff" stroke="#a2a9b1" stroke-width="1" />
+          <text x="120" y="233" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">段落テキスト...</text>
+          <rect x="45" y="258" width="150" height="24" rx="4" fill="#eaf3ff" stroke="#36c" stroke-width="1.5" />
+          <text x="120" y="274" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#202122">## 見出し C</text>
+          <rect x="45" y="290" width="150" height="40" rx="4" fill="#fff" stroke="#a2a9b1" stroke-width="1" />
+          <text x="120" y="313" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">段落テキスト...</text>
+          <!-- Brace for context_full range -->
+          <path d="M 205 128 Q 225 128 225 170 Q 225 200 225 252 Q 225 252 205 252" fill="none" stroke="#36c" stroke-width="2" />
+          <text x="232" y="194" font-family="sans-serif" font-size="11" fill="#36c">切り出し範囲</text>
+
+          <!-- Arrow to processing -->
+          <line x1="270" y1="190" x2="330" y2="190" stroke="#36c" stroke-width="2.5" marker-end="url(#cf-arrow)" />
+
+          <!-- Processing box -->
+          <rect x="335" y="120" width="160" height="140" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="415" y="155" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#202122">Context Full</text>
+          <text x="415" y="175" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#202122">Construction</text>
+          <text x="415" y="200" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">1. 見出し境界特定</text>
+          <text x="415" y="216" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">2. 前後拡張</text>
+          <text x="415" y="232" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">3. トークン制限トリム</text>
+          <text x="415" y="248" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">4. メタデータ付与</text>
+
+          <!-- Arrow to output -->
+          <line x1="500" y1="190" x2="560" y2="190" stroke="#36c" stroke-width="2.5" marker-end="url(#cf-arrow)" />
+
+          <!-- Output: enriched chunk -->
+          <rect x="565" y="80" width="220" height="220" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="675" y="72" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#202122">Enriched Chunk</text>
+          <rect x="580" y="95" width="190" height="28" rx="4" fill="#fff" stroke="#a2a9b1" stroke-width="1" />
+          <text x="675" y="113" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#202122">search_text (短い要約)</text>
+          <rect x="580" y="131" width="190" height="28" rx="4" fill="#ffec99" stroke="#e6a700" stroke-width="1.5" />
+          <text x="675" y="149" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#202122">context_full (広い文脈)</text>
+          <rect x="580" y="167" width="190" height="28" rx="4" fill="#fff" stroke="#a2a9b1" stroke-width="1" />
+          <text x="675" y="185" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#202122">search_headings</text>
+          <rect x="580" y="203" width="190" height="28" rx="4" fill="#fff" stroke="#a2a9b1" stroke-width="1" />
+          <text x="675" y="221" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#202122">keywords</text>
+          <rect x="580" y="239" width="190" height="28" rx="4" fill="#fff" stroke="#a2a9b1" stroke-width="1" />
+          <text x="675" y="257" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#202122">picture_texts (OCR)</text>
+
+          <!-- Labels -->
+          <text x="415" y="380" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">見出し B 〜 見出し C の手前までが context_full の範囲</text>
+        </svg>
+        <div class="diagram-caption">Context Full Construction の流れ: Markdown 文書からチャンクを囲む見出し境界を特定し、トークン上限内でトリミングして context_full フィールドを組み立てる。</div>
+      </div>
+
+      <h2 id="token-budget">トークン予算と切り詰め戦略</h2>
+      <p>context_full のトークン予算は、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> が回答生成時に渡すプロンプトの最大長から逆算されます。一般的には 1 チャンクあたり 1,000〜2,000 トークン程度が割り当てられます。</p>
+      <p>予算を超えた場合の切り詰めには、いくつかのルールがあります。まず、チャンク本文（search_text の元テキスト）は最優先で保持されます。次に、本文の前後のテキストを文単位で対称的に削ります。最後に、それでも超える場合は前方（見出し直後のテキスト）を優先し、後方を多めに削ります。これは、節の冒頭には定義や導入が書かれていることが多く、回答の正確性に寄与しやすいためです。</p>
+      <p>この予算管理は <a href="retrieval-budgeting.html">Retrieval Budgeting</a> の一部として設計されており、検索ラウンドごとに使えるトークン総量と連動しています。</p>
+
+      <h2 id="relation-to-search">検索・回答生成との関係</h2>
+      <p>context_full は検索そのものには使われません。検索には <code>search_text</code>（<a href="search-summary-enrichment.html">Search Summary Enrichment</a> で生成される要約）がベクトル化されて使われます。context_full が活躍するのは、検索でヒットしたチャンクを LLM に渡して回答を生成する段階です。</p>
+      <p>つまり、検索の入口では短い要約でマッチングし、回答の生成では広い文脈で正確性を担保するという二段構えになっています。この設計により、検索精度（recall）と回答品質（faithfulness）を両立しています。<a href="retrieval-round-policy.html">Retrieval Round Policy</a> が複数ラウンドの検索を制御するとき、各ラウンドで返されるチャンクの context_full が回答のエビデンスとして蓄積されます。</p>
+
+      <h2 id="edge-cases">エッジケースへの対処</h2>
+      <h3 id="edge-no-heading">見出しがない文書</h3>
+      <p><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> では、見出しがない文書には synthetic heading（合成見出し）を自動付与します。context_full の組み立てでもこの合成見出しを境界として利用するため、見出しのない文書でも安定して動作します。</p>
+      <h3 id="edge-table">テーブルや画像が含まれるチャンク</h3>
+      <p>表を含むチャンクでは、表の前後の見出し境界まで context_full を広げると非常に長くなることがあります。この場合、表の Markdown 表現はそのまま残しつつ、前後の段落テキストを優先的に削ります。<a href="picture-ocr-stage.html">Picture OCR Stage</a> で付与された画像テキストは context_full には含めず、別フィールド（<code>picture_texts</code>）として保持します。これにより、context_full のトークン予算を圧迫しません。</p>
+      <h3 id="edge-oversize">Oversize split 後のチャンク</h3>
+      <p><a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a> で追加分割されたチャンクについては、分割前の元チャンクと同じ見出し境界を共有します。ただし、context_full の内容は各分割チャンクの本文位置に応じて再計算されるため、同じ節内でも分割チャンクごとに異なる context_full が生成されます。</p>
+
+      <h2 id="implementation">実装上のポイント</h2>
+      <p>context_full の組み立ては <code>job_src.chunking</code> モジュール内で、チャンク enrichment の一部として実行されます。Markdown 変換には Docling の <code>export_to_markdown()</code> を利用し、見出し境界の検出は正規表現で <code>^#{1,3}\s</code> パターンをマッチさせます。</p>
+      <p>トークン数の計算には、<a href="split-deployment-rag.html">Split Deployment RAG</a> の各モジュールで共通の tokenizer（tiktoken）が使われます。これは <a href="env-contract-management.html">環境変数コントラクト管理</a> で定義されたモデル名から自動選択されるため、モデルを変更してもトークン計算が一貫します。</p>
+      <p>将来的には、見出し境界だけでなく意味的な段落境界（<a href="semantic-paragraph-segmentation.html">Semantic Paragraph Segmentation</a>）を利用した、より精密な文脈切り出しが検討されています。また、複数チャンクの context_full を統合して重複を排除する <a href="context-deduplication-merge.html">Context Deduplication Merge</a> や、文書種別に応じて切り出し戦略を変える <a href="document-type-aware-context.html">Document-Type Aware Context</a> も今後の課題です。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#purpose">なぜ context_full が必要か</a></li>
+          <li><a href="#algorithm">組み立てアルゴリズム</a>
+            <ul>
+              <li><a href="#algorithm-step1">ステップ1: Markdown 変換と見出し境界の特定</a></li>
+              <li><a href="#algorithm-step2">ステップ2: 前後拡張とトリミング</a></li>
+              <li><a href="#algorithm-step3">ステップ3: メタデータの付与</a></li>
+            </ul>
+          </li>
+          <li><a href="#token-budget">トークン予算と切り詰め戦略</a></li>
+          <li><a href="#relation-to-search">検索・回答生成との関係</a></li>
+          <li><a href="#edge-cases">エッジケースへの対処</a>
+            <ul>
+              <li><a href="#edge-no-heading">見出しがない文書</a></li>
+              <li><a href="#edge-table">テーブルや画像が含まれるチャンク</a></li>
+              <li><a href="#edge-oversize">Oversize split 後のチャンク</a></li>
+            </ul>
+          </li>
+          <li><a href="#implementation">実装上のポイント</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+          <li><a href="search-summary-enrichment.html">Search Summary Enrichment</a></li>
+          <li><a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a></li>
+          <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="search-summary-enrichment.html">Search Summary Enrichment</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a></li>
+        <li><a href="retrieval-budgeting.html">Retrieval Budgeting</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="semantic-paragraph-segmentation.html">Semantic Paragraph Segmentation</a></li>
+        <li><a href="context-deduplication-merge.html">Context Deduplication Merge</a></li>
+        <li><a href="document-type-aware-context.html">Document-Type Aware Context</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

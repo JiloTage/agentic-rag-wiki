@@ -1,24 +1,6 @@
 {
   "queue": [
     {
-      "proposed_slug": "context-full-construction",
-      "proposed_title": "Context Full Construction",
-      "rationale": "chunk ごとに context_full を組み立てる処理は要約 text と並ぶ検索品質の核である。",
-      "interestingness_score": 0.86,
-      "source_id": "docling-hybrid-chunking",
-      "created_at": "2026-03-24T17:53:58+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "picture-ocr-stage",
-      "proposed_title": "Picture OCR Stage",
-      "rationale": "本文抽出と画像 OCR をどう切り分けて併用するかは parse 戦略の理解に直結する。",
-      "interestingness_score": 0.85,
-      "source_id": "document-ingestion-pipeline",
-      "created_at": "2026-03-24T17:42:07+09:00",
-      "status": "queued"
-    },
-    {
       "proposed_slug": "optimization-priority-modes",
       "proposed_title": "Optimization Priority Modes",
       "rationale": "quality / latency / cost の三つの optimize priority が budget の切り方をどう変えるかは独立に掘る価値がある。",
@@ -224,9 +206,110 @@
       "source_id": "env-contract-management",
       "created_at": "2026-03-24T17:42:07+09:00",
       "status": "queued"
+    },
+    {
+      "proposed_slug": "tool-round-executor",
+      "proposed_title": "Tool Round Executor",
+      "rationale": "検索の同時実行と重複除去・スコアリングを担うエンジンはラウンドポリシーの実行面を支える。",
+      "interestingness_score": 0.82,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "retrieval-validation-logging",
+      "proposed_title": "Retrieval Validation Logging",
+      "rationale": "ラウンドごとのヒント・フィルタ・予算の検証ログは運用デバッグの核である。",
+      "interestingness_score": 0.74,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "retrieval-result-deduplication",
+      "proposed_title": "Retrieval Result Deduplication",
+      "rationale": "複数ラウンドにまたがる検索結果の統合と再スコアリングは最終回答品質に直結する。",
+      "interestingness_score": 0.71,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "managed-identity-scoping",
+      "proposed_title": "Managed Identity Scoping",
+      "rationale": "Azure マネージド ID をジョブリソースだけに絞り込む設計は最小権限の実装例として独立記事化しやすい。",
+      "interestingness_score": 0.82,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "bicep-parameter-flow",
+      "proposed_title": "Bicep Parameter Flow",
+      "rationale": "main.bicep のパラメータが各リソースへどう受け渡されるかを追うと IaC 設計が見える。",
+      "interestingness_score": 0.78,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "container-app-scaling-rules",
+      "proposed_title": "Container App Scaling Rules",
+      "rationale": "API の minReplicas/maxReplicas とスケーリング設計は運用コストと可用性のバランスを決める。",
+      "interestingness_score": 0.73,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "env-domain-classification",
+      "proposed_title": "Env Domain Classification",
+      "rationale": "auth/retrieval/storage/observability/runtime の5ドメイン分類は env governance の土台である。",
+      "interestingness_score": 0.79,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "env-convention-checker",
+      "proposed_title": "Env Convention Checker",
+      "rationale": "check_env_convention.py による命名パターン検証は consistency checks の補完的な品質保証である。",
+      "interestingness_score": 0.76,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "ci-env-validation-gate",
+      "proposed_title": "CI Env Validation Gate",
+      "rationale": "CI パイプラインでの環境変数チェックゲートは drift を本番到達前に止める最後の砦である。",
+      "interestingness_score": 0.73,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
     }
   ],
   "history": [
+    {
+      "proposed_slug": "context-full-construction",
+      "proposed_title": "Context Full Construction",
+      "rationale": "chunk ごとに context_full を組み立てる処理は要約 text と並ぶ検索品質の核である。",
+      "interestingness_score": 0.86,
+      "source_id": "docling-hybrid-chunking",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:30:00+09:00"
+    },
+    {
+      "proposed_slug": "picture-ocr-stage",
+      "proposed_title": "Picture OCR Stage",
+      "rationale": "本文抽出と画像 OCR をどう切り分けて併用するかは parse 戦略の理解に直結する。",
+      "interestingness_score": 0.85,
+      "source_id": "document-ingestion-pipeline",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:30:00+09:00"
+    },
     {
       "proposed_slug": "split-deployment-rag",
       "proposed_title": "Split Deployment RAG",
