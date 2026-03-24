@@ -84,25 +84,25 @@
 
       <h2 id="boundaries">責務境界</h2>
       <h3 id="web-boundary">Web UI の境界</h3>
-      <p><code>apps/web</code> は Next.js で作られた画面です。チャット、ファイル一覧、取り込み状況、トレース表示をユーザーに見せます。ここでは検索や OCR を直接実行せず、API を呼ぶだけに徹しています。そのため、画面の変更と取り込み処理の変更を、お互いに影響なく進められます。</p>
+      <p><code>apps/web</code> は Next.js で作った画面です。チャット画面、ファイルの一覧、取り込みの進み具合、処理の記録などを表示します。この画面は検索や OCR（画像から文字を読み取ること）を自分では行いません。API を呼ぶだけです。そのおかげで、画面を変えるときに取り込み処理を気にしなくて済みます。</p>
 
       <h3 id="chat-boundary">Chat API の境界</h3>
-      <p><code>apps/chat</code> は、認証、スレッド管理、ファイル管理、チャット応答、ストリーミング、監視、取り込みジョブの起動といった窓口を担います。ここで大事なのは、API が自分で文書の変換をすべてやるのではなく、必要なときに job を起動する「まとめ役」として動くことです。つまり API はユーザーとの同期的なやりとりを守りつつ、裏の処理の入口になっています。</p>
+      <p><code>apps/chat</code> は、ログイン確認、スレッド管理、ファイル管理、チャットの返答、データの送信、監視、取り込み job の起動などを行います。大事なのは、API が自分で文書を変換するのではなく、必要なときに job を動かす「まとめ役」だということです。ユーザーとのやりとりを止めずに、裏側の処理を始められます。</p>
 
       <h3 id="job-boundary">Ingest Job の境界</h3>
-      <p><code>apps/job</code> は、準備・解析・OCR・分割・メタデータ付与・インデックス登録・コールバック通知を順に行う非同期ワーカーです。CPU やメモリを多く使う重い処理をこの job 側に分けることで、chat API を軽く保てます。ここで作られるデータの詳細は <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の記事で読めます。</p>
+      <p><code>apps/job</code> は、文書の準備、読み取り、OCR、分割、情報の付与、検索データへの登録、結果の通知を順番に行います。CPU やメモリをたくさん使う重い処理をこちらに分けることで、chat API を軽くできます。くわしくは <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> をご覧ください。</p>
 
       <h2 id="deployment">配備にどう落ちるか</h2>
-      <p><code>docker-compose.yml</code> では、<code>chat</code>、<code>web</code>、<code>job</code> がそれぞれ別のサービスとして書かれています。chat と web にはヘルスチェック（正常に動いているかの確認）があり、web は chat が正常に起動してから立ち上がります。job は compose の profile を使って手動で起動します。つまり、常に動いているサービスと、必要なときだけ動かすサービスが分かれています。</p>
-      <p><code>infra/main.bicep</code> では、この分離が Azure 上の実際のサービスになります。API は Container App、文書取り込みは手動で起動する Container Apps Job、Web 画面は Static Web App として定義されています。API には「job を起動する権限だけ」が与えられています。この構成の詳しい話は <a href="azure-container-apps-topology.html">Azure Container Apps Topology</a> や <a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a> の記事で読めます。</p>
+      <p><code>docker-compose.yml</code> では、<code>chat</code>、<code>web</code>、<code>job</code> が別々のサービスとして書かれています。chat と web にはヘルスチェック（ちゃんと動いているかの確認）があります。web は chat が起動してから立ち上がります。job は必要なときだけ手動で起動します。</p>
+      <p><code>infra/main.bicep</code> では、Azure 上のサービスとしてデプロイされます。API は Container App、文書取り込みは Container Apps Job、画面は Static Web App です。API には「job を起動する権限だけ」が与えられます。くわしくは <a href="azure-container-apps-topology.html">Azure Container Apps Topology</a> や <a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a> をご覧ください。</p>
 
       <h2 id="local-dev">ローカル検証フロー</h2>
-      <p>サービスを分けて動かすときは、起動前に環境変数をどうそろえるかが大事です。Project Diana では <code>tools/render_env_profiles.py</code> というスクリプトが、各モジュールの <code>.env.example</code> と環境ごとの設定をまとめて <code>.env.local</code> を作ってくれます。chat・job・web それぞれに必要な値を配ってくれるのです。このように、split deployment はただコンテナを分けるだけでなく、<a href="env-contract-management.html">環境変数コントラクト管理</a> とセットで使う仕組みです。</p>
-      <p>ローカルでは <code>docker compose up --build</code> で chat と web をまとめて起動します。文書を取り込みたいときは <code>docker compose --profile job run --rm job</code> で ingest を実行します。こうすることで、ユーザー向けの機能と文書の取り込みを、別々のタイミングで試せます。</p>
+      <p>サービスを分けて動かすときは、環境変数（アプリの設定値）をそろえることが大切です。<code>tools/render_env_profiles.py</code> というスクリプトが、各モジュールの <code>.env.example</code> と環境ごとの設定をまとめて <code>.env.local</code> を作ってくれます。chat・job・web にそれぞれ必要な値を配ってくれます。このように、サービスを分けるだけでなく、<a href="env-contract-management.html">環境変数コントラクト管理</a> とセットで使います。</p>
+      <p>ローカルでは <code>docker compose up --build</code> で chat と web を起動します。文書を取り込みたいときは <code>docker compose --profile job run --rm job</code> を使います。こうすると、チャットと文書取り込みを別々に試せます。</p>
 
       <h2 id="tradeoffs">設計上の含意</h2>
-      <p>split deployment は、スケーリングや可用性の面では有利ですが、設定の同期・コールバックの取り決め・監視・デプロイ順序の管理が必要になります。Project Diana が runbook・env contract・段階デプロイ・trace UI を同じリポジトリに置いているのは、この管理コストに対応するためです。つまり、サービスを分けるだけでは不十分で、分けた後のつなぎ目をドキュメントとコードで維持していく必要があります。</p>
-      <p>次に読むと理解が深まる記事としては、<a href="env-contract-management.html">環境変数コントラクト管理</a>、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="workspace-trace-ui.html">Workspace Trace UI</a> があります。デプロイの詳細については <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> も参考になります。</p>
+      <p>サービスを分けると、増やしたいものだけ増やせるし、壊れにくくなります。ただし、設定をそろえること、結果の通知のやり方、監視、デプロイの順番などを管理する必要があります。Project Diana では runbook、env contract、段階デプロイ、trace UI を同じリポジトリに置いて、この管理をしやすくしています。</p>
+      <p>関連する記事として、<a href="env-contract-management.html">環境変数コントラクト管理</a>、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="workspace-trace-ui.html">Workspace Trace UI</a> があります。デプロイについては <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> も参考になります。</p>
     </main>
 
     <aside class="wiki-sidebar">
