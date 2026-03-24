@@ -467,6 +467,7 @@
         "env-contract-management",
         "env-profile-rendering",
         "local-docker-compose-profile",
+        "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "role-assignment-audit-trail",
         "split-deployment-rag"

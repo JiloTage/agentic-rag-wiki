@@ -31,7 +31,7 @@
 
       <h2 id="principle">最小権限の原則と Azure RBAC</h2>
       <p>Azure の RBAC（Role-Based Access Control、役割ベースのアクセス制御）では、「誰が」「何を」「どこに」できるかを3つの要素で定義する。「誰が」は principalId（マネージド ID の ID）、「何を」は roleDefinitionId（Contributor などのロール定義）、「どこに」は scope（適用範囲）である。</p>
-      <p><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の API は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> を起動するためにジョブの開始権限が必要である。しかし、Storage Account の削除や他の Container App の設定変更までできてしまっては危険である。scope を job リソースだけに絞ることで、API の「できること」を「ingest ジョブの起動・停止」だけに限定できる。</p>
+      <p><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の API は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> を起動するためにジョブの開始権限が必要である。一方で API は <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>（ポリシーに基づく検索制御）も担当するが、検索サービスへのアクセスは API キー経由であり RBAC スコープとは別経路で管理される。Storage Account の削除や他の Container App の設定変更までできてしまっては危険なので、scope を job リソースだけに絞ることで、API の「できること」を「ingest ジョブの起動・停止」だけに限定する。</p>
 
       <h2 id="bicep-implementation">Bicep による実装</h2>
       <p>Bicep テンプレートでは、まず API の Container App にシステム割り当てマネージド ID（<code>identity: { type: 'SystemAssigned' }</code>）を設定する。次に、<code>Microsoft.Authorization/roleAssignments</code> リソースを job のスコープ内で定義する。具体的には以下の要素を指定する。</p>
@@ -169,6 +169,7 @@
         <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
         <li><a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a></li>
         <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
         <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
         <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
         <li><a href="local-docker-compose-profile.html">Local Docker Compose Profile</a></li>
