@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Diana Agentic RAG - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Project Diana Agentic RAG
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Project Diana Agentic RAG</h1>
+      <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
+      <div class="article-summary">Project Diana Agentic RAG は、policy-enforced retrieval と document ingest を分離デプロイで運用するための private repository である。FastAPI API、ingest job、Next.js ワークスペース UI、Azure Bicep 定義を単一のモノレポで束ね、実装と運用手順を同時に管理している。</div>
+
+      <p><b>Project Diana Agentic RAG</b> は、ACES の private GitHub repository <code>aces-inc/project-diana-agentic-rag</code> として管理されている Agentic RAG 基盤である。README の定義では「policy-enforced KB retrieval + split deployment」が中心思想であり、<a href="split-deployment-rag.html">Split Deployment RAG</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="env-contract-management.html">環境変数コントラクト管理</a> を同時に扱う設計が採られている。</p>
+
+      <h2 id="overview">リポジトリの位置づけ</h2>
+      <p>このリポジトリは default branch が <code>master</code> の monorepo であり、単純な API 実装ではなく、検索付きチャット、非同期 ingest、フロントエンド作業領域、Azure への配備定義、検証 runbook までをひとまとめにしている。トップレベル README から見える責務は <code>apps/chat</code>、<code>apps/job</code>、<code>apps/web</code>、<code>infra</code> の 4 つに整理されており、単一プロセスではなく役割分離を前提にした運用を意識している。</p>
+      <p>特徴的なのは、RAG の実装だけでなく運用規約も同じ repo に置かれている点である。たとえば <code>docs/split-local-dev.md</code> は local runbook を、<code>docs/env-unified-management.md</code> は設定ガバナンスを、<code>env/contract.json</code> は各モジュールの環境変数契約を担う。したがってこの repo は「アプリコードの置き場」だけではなく、開発・検証・ロールアウトの共通仕様書でもある。</p>
+
+      <h2 id="architecture">全体アーキテクチャ</h2>
+      <p>構成は split deployment 型で、ユーザー体験を持つ <code>apps/web</code>、API 制御層の <code>apps/chat</code>、非同期 ingest を担当する <code>apps/job</code> が明確に分かれている。さらに Azure Search、Azure OpenAI、Document Intelligence、Storage などの周辺サービスが Bicep 定義と env contract を通じて結び付けられている。これは、検索応答と文書取り込みを同じサーバーに押し込まず、責務ごとにスケールと失敗境界を分けるための構成と読める。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 430" width="920" height="430">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <rect x="320" y="20" width="280" height="62" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="460" y="46" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">env/contract.json</text>
+          <text x="460" y="66" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">profiles, required keys, module rules</text>
+
+          <rect x="60" y="125" width="200" height="86" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="160" y="154" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">apps/web</text>
+          <text x="160" y="176" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">Next.js workspace UI</text>
+          <text x="160" y="194" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">chat, files, ingest, trace</text>
+
+          <rect x="360" y="125" width="200" height="86" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="460" y="154" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">apps/chat</text>
+          <text x="460" y="176" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">FastAPI API</text>
+          <text x="460" y="194" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">auth, chat, ingest, observability</text>
+
+          <rect x="660" y="125" width="200" height="86" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="760" y="154" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">apps/job</text>
+          <text x="760" y="176" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">ingest / indexing worker</text>
+          <text x="760" y="194" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">prepare, parse, chunk, index</text>
+
+          <rect x="80" y="290" width="170" height="70" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="165" y="320" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">Workspace / Trace</text>
+          <text x="165" y="341" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">user-facing panels</text>
+
+          <rect x="305" y="280" width="180" height="80" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="395" y="311" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">Azure Search</text>
+          <text x="395" y="332" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">retrieval index</text>
+
+          <rect x="510" y="280" width="180" height="80" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="600" y="311" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">Azure OpenAI</text>
+          <text x="600" y="332" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">responses / metadata / embeddings</text>
+
+          <rect x="715" y="280" width="150" height="80" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="790" y="311" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">Doc Intelligence</text>
+          <text x="790" y="332" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">OCR / parse assist</text>
+
+          <line x1="460" y1="82" x2="160" y2="125" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="460" y1="82" x2="460" y2="125" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="460" y1="82" x2="760" y2="125" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+
+          <line x1="260" y1="168" x2="360" y2="168" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="560" y1="168" x2="660" y2="168" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+
+          <line x1="160" y1="211" x2="165" y2="290" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="430" y1="211" x2="400" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="490" y1="211" x2="580" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="730" y1="211" x2="635" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="790" y1="211" x2="790" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="705" y1="211" x2="440" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+        </svg>
+        <div class="diagram-caption">Project Diana Agentic RAG の split deployment 構成。env contract が web/chat/job を横断し、chat と job が Azure サービス群を分担して利用する。</div>
+      </div>
+
+      <h2 id="modules">主要モジュール</h2>
+      <h3 id="chat-api">Chat API</h3>
+      <p><code>apps/chat</code> は FastAPI ベースの API サービスであり、<code>chat_src.api.app</code> から <code>auth</code>、<code>files</code>、<code>threads</code>、<code>chat</code>、<code>chat_stream</code>、<code>ingest</code>、<code>observability</code> の各 router が組み込まれている。CORS、correlation and observability middleware、統一エラーペイロード、retryable 判定が入口で揃えられているため、RAG 本体よりも前段の API 契約と運用観測性に強く寄っていることが分かる。</p>
+      <p>依存関係には <code>fastapi</code>、<code>openai</code>、<code>azure-search-documents</code>、<code>azure-ai-agents</code>、Table/Blob Storage 系ライブラリが含まれており、検索結果の取得だけでなく認証、ファイル状態、履歴保存、ingest 起動まで同じサービス境界で扱う構成である。strict 対象に orchestrator や runtime support 群が列挙されている点からも、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> をアプリケーションの中核に置いていることが読み取れる。</p>
+
+      <h3 id="ingest-job">Ingest Job</h3>
+      <p><code>apps/job</code> は文書投入を非同期実行する worker であり、<code>job_src.entrypoint</code> では validate、prepare、parse、picture OCR、chunk、metadata、index、callback という段階的な pipeline が明示されている。特に parse と OCR を分け、chunking と metadata 生成を並列に実行し、最後に index 書き込みと callback 配信へ流す設計は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> を独立サービスとして切り出した理由をよく示している。</p>
+      <p>依存には <code>docling</code>、<code>pypdf</code>、<code>tiktoken</code>、<code>torch</code>、<code>azure-search-documents</code>、<code>openai</code> が含まれる。これは単なる PDF 分割ではなく、OCR、分類、埋め込み、検索用 enriched chunk の生成まで job 側で完結させる意図を表す。エラー分類コードや degrade 可能な metadata 失敗の扱いも実装されており、運用上の失敗モードを最初から想定している。</p>
+
+      <h3 id="web-ui">Web Workspace</h3>
+      <p><code>apps/web</code> は Next.js 16 と React 18.3 を使った workspace UI であり、<code>app/page.tsx</code> は <code>WorkspaceShell</code> を中心に構成される。Shell には <code>AuthCard</code>、<code>ChatPanel</code>、<code>FilesPanel</code>、<code>IngestPanel</code>、<code>ThreadPanel</code>、<code>TraceModal</code> がぶら下がっており、単一のチャット画面ではなく、認証済みユーザーが知識ベース管理と会話を横断する作業領域として設計されている。</p>
+      <p>README と local runbook が示す「streaming trace panels」という表現どおり、この UI は回答本文だけでなく retrieval、reasoning、citation を追える観測面を持つ。したがって <a href="workspace-trace-ui.html">Workspace Trace UI</a> は単なる見た目の話ではなく、agentic retrieval の説明責任とデバッグ効率を担う要素である。</p>
+
+      <h3 id="infra">Infra</h3>
+      <p><code>infra/main.bicep</code> は Azure を前提に、Container Apps の API アプリ、manual trigger の ingest job、Static Web App、Storage Account、Table Storage、job 起動用 role assignment を定義している。API と job が別の実行単位として構成され、API 側には job 起動権限だけをスコープ限定で与えているため、アーキテクチャ図だけでなく権限境界も split deployment の考え方に沿っている。</p>
+      <p>この Bicep は Azure Search と Azure OpenAI の接続情報、knowledge base 名、JWT と webhook secret などを secure parameter として受け取り、実行環境へ注入する。つまりリポジトリの infra 層は、RAG 推論基盤と業務 API をつなぐ配線図であると同時に、デプロイ時の責務分担をコード化した部分でもある。</p>
+
+      <h2 id="operations">設定と運用モデル</h2>
+      <h3 id="env-contract">Env Contract</h3>
+      <p>この repo を特徴づける最大の仕組みの一つが <code>env/contract.json</code> を source of truth に据えた env governance である。ここには key の owner、domain、説明、module 別の required/non-local-required/optional ルール、さらに <code>local</code>、<code>dev</code>、<code>stg</code>、<code>prod</code> の profile override が整理されている。ドキュメントは、module catalog、<code>.env.example</code>、contract の 3 者を一致させることを明示しており、<a href="env-contract-management.html">環境変数コントラクト管理</a> そのものが実装の一部になっている。</p>
+      <p>重要なのは、Python サービスが runtime で <code>load_dotenv()</code> を使わず、process environment のみを読むと明記している点である。これは import 時の副作用を避けつつ、CI 検証と local override を両立するための方針であり、設定読み出しの一貫性を高めている。</p>
+
+      <h3 id="local-validation">Local Validation とロールアウト</h3>
+      <p>起動方法は Docker あり・なしの両方が README に整理されているが、推奨は <code>docker compose up --build</code> を使う local-first 運用である。API は <code>/health</code> と <code>/ready</code> を持ち、web は port 3000、chat は port 8000 を基本にする。テスト面では chat/job の <code>pytest</code>、web の <code>vitest</code> と Playwright、env convention/consistency check、さらに OpenSpec validation が用意されているため、実装・契約・UI の三層で検証する体制になっている。</p>
+      <p><code>docs/split-local-dev.md</code> には <code>ROLLOUT_PHASE</code> を用いた段階的な release gate も記されており、Retrieval dependency health や phase 4 migration rollback まで手順化されている。つまりこの repo は PoC 的な RAG 実験場ではなく、段階的デプロイと失敗時の後退戦略を持つ運用対象として設計されている。</p>
+
+      <h2 id="reading-lenses">読み解くポイント</h2>
+      <p>この repo を理解するときは、単に「どのモデルを呼んでいるか」を追うだけでは不十分である。むしろ次の 4 観点で読むと構造が見えやすい。</p>
+      <ul>
+        <li>chat と job を分けることで、対話応答と文書処理の失敗境界をどのように切っているか。</li>
+        <li>env contract によって、モジュールごとの設定責務をどこまで機械的に検証しているか。</li>
+        <li>trace UI と observability route により、検索根拠と推論経路をどこまで可視化しているか。</li>
+        <li>runbook、phase rollout、infra 定義まで含めて、RAG システムを「継続運用する製品」として扱っているか。</li>
+      </ul>
+      <p>次に掘るべき記事候補としては、<a href="split-deployment-rag.html">Split Deployment RAG</a>、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="workspace-trace-ui.html">Workspace Trace UI</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="env-contract-management.html">環境変数コントラクト管理</a> が自然である。これらを分解すると、Project Diana Agentic RAG の設計思想をサービス境界、設定、UI、運用の各面から再構成できる。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#overview">リポジトリの位置づけ</a></li>
+          <li><a href="#architecture">全体アーキテクチャ</a></li>
+          <li><a href="#modules">主要モジュール</a></li>
+          <li class="toc-h3"><a href="#chat-api">Chat API</a></li>
+          <li class="toc-h3"><a href="#ingest-job">Ingest Job</a></li>
+          <li class="toc-h3"><a href="#web-ui">Web Workspace</a></li>
+          <li class="toc-h3"><a href="#infra">Infra</a></li>
+          <li><a href="#operations">設定と運用モデル</a></li>
+          <li class="toc-h3"><a href="#env-contract">Env Contract</a></li>
+          <li class="toc-h3"><a href="#local-validation">Local Validation とロールアウト</a></li>
+          <li><a href="#reading-lenses">読み解くポイント</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+          <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+          <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+          <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

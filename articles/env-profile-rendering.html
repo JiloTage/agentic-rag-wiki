@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Env Profile Rendering - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Env Profile Rendering
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Env Profile Rendering</h1>
+      <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
+      <div class="article-summary">Env Profile Rendering は、base template と contract profile override から `apps/<module>/.env.<profile>` を生成する仕組みである。Project Diana では split deployment の各モジュールへ設定を配る共通経路として `tools/render_env_profiles.py` が使われる。</div>
+
+      <p><b>Env Profile Rendering</b> は、<a href="env-contract-management.html">環境変数コントラクト管理</a> を実際の runtime file へ落とすためのスクリプト処理である。Project Diana では <code>tools/render_env_profiles.py</code> が chat、job、web の base template を読み、profile override を適用して <code>.env.local</code> などの実行用ファイルを生成する。</p>
+
+      <h2 id="inputs">入力は 3 つある</h2>
+      <p>この render 処理が依存するのは、contract、base template、module/profile の選択である。contract からは上書き値を読み、<code>apps/chat/.env.example</code>、<code>apps/job/.env.example</code>、<code>apps/web/.env.example</code> が置換対象になる。つまり render は自由入力ではなく、あらかじめ契約化されたキー集合にだけ作用する。</p>
+      <p>この前提があるからこそ、<a href="split-deployment-rag.html">Split Deployment RAG</a> でも chat と job と web に同じ基準で設定を配れる。単なるテンプレートコピーではなく、モジュールごとの base file を維持しながら profile 差分だけを当てる点が重要である。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 360" width="930" height="360">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <rect x="85" y="60" width="190" height="70" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="180" y="90" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">env/contract.json</text>
+          <text x="180" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">profile overrides</text>
+
+          <rect x="370" y="60" width="190" height="70" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="465" y="90" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">.env.example</text>
+          <text x="465" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">chat / job / web base</text>
+
+          <rect x="650" y="60" width="210" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="755" y="90" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">render_env_profiles.py</text>
+          <text x="755" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">module + profile selection</text>
+
+          <rect x="220" y="230" width="210" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="325" y="260" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">.env.local / .env.dev</text>
+          <text x="325" y="282" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">generated runtime files</text>
+
+          <rect x="520" y="230" width="210" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="625" y="260" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">process environment</text>
+          <text x="625" y="282" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">chat / job / web startup</text>
+
+          <line x1="275" y1="95" x2="370" y2="95" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="560" y1="95" x2="650" y2="95" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="755" y1="130" x2="380" y2="230" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="430" y1="265" x2="520" y2="265" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+        </svg>
+        <div class="diagram-caption">Env Profile Rendering は contract と base template を結合し、生成済み `.env.<profile>` を経由して runtime process environment を準備する。</div>
+      </div>
+
+      <h2 id="algorithm">render スクリプトがしていること</h2>
+      <p>スクリプトはまず contract を読み、module と profile の選択を正規化する。続いて base template を 1 行ずつ読み、環境変数代入に一致する行だけを override で置換する。ここで override 側に base template に存在しないキーがあるとエラーになるため、profile 定義がテンプレートから逸脱した時点で検出できる。</p>
+      <p>さらに <code>--check</code> モードでは生成せず、既存の <code>.env.&lt;profile&gt;</code> が render 結果と一致するかだけを見る。これは CI 上で drift を見つけるための用途に向いており、<a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a> として切り出せる論点である。</p>
+
+      <h2 id="module-differences">モジュール差分の扱い</h2>
+      <p>chat と job は Python サービスであり、search、OpenAI、Storage、webhook secret など多くの key を持つ一方、web の template はほぼ <code>NEXT_PUBLIC_API_BASE_URL</code> と <code>NEXT_PUBLIC_APP_ENV</code> に限られる。render スクリプトはこの差を抽象化しない。むしろ module ごとに base template を分けたまま、共通アルゴリズムだけを提供する。</p>
+      <p>この設計は、各 module の責務が異なることを隠さないという意味で妥当である。<a href="module-env-catalogs.html">Module Env Catalogs</a> を見ると、chat と job の env 空間が大きく異なり、それでも同じ render フローに乗っていることが分かる。</p>
+
+      <h2 id="ops">運用上の意味</h2>
+      <p>Project Diana の README と runbook では、ローカル起動前に <code>python tools/render_env_profiles.py --module ... --profile local</code> を実行する前提になっている。これは runtime コードが <code>load_dotenv()</code> に依存せず、生成済み env file を process environment に流し込む構造だからである。つまり render は開発補助ではなく、起動手順の正式な一部である。</p>
+      <p>また、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> で使う policy 系 env や top-k 系 env も、この render によって profile 別に供給される。したがって env profile rendering は、単なる設定配布ではなく挙動切替の入口でもある。</p>
+
+      <h2 id="next">次に読むべき周辺</h2>
+      <p>この仕組みをさらに分解するなら、contract と template の整合を確かめる <a href="env-consistency-checks.html">Env Consistency Checks</a>、module ごとの定義差分を追う <a href="module-env-catalogs.html">Module Env Catalogs</a>、生成されたファイルそのものを扱う <a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a> が自然である。ローカル運用寄りには <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> もつながる。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#inputs">入力は 3 つある</a></li>
+          <li><a href="#algorithm">render スクリプトがしていること</a></li>
+          <li><a href="#module-differences">モジュール差分の扱い</a></li>
+          <li><a href="#ops">運用上の意味</a></li>
+          <li><a href="#next">次に読むべき周辺</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+          <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+          <li><a href="module-env-catalogs.html">Module Env Catalogs</a></li>
+          <li><a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a></li>
+          <li><a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+        <li><a href="module-env-catalogs.html">Module Env Catalogs</a></li>
+        <li><a href="local-docker-compose-profile.html">Local Docker Compose Profile</a></li>
+        <li><a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a></li>
+        <li><a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

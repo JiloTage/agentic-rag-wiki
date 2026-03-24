@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Split Deployment RAG - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Split Deployment RAG
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Split Deployment RAG</h1>
+      <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
+      <div class="article-summary">Split Deployment RAG は、対話 API、文書 ingest、Web UI を別の実行単位として分離する RAG 構成である。Project Diana ではこの分離により、応答経路と indexing 経路の失敗境界、権限境界、スケール戦略を切り分けている。</div>
+
+      <p><b>Split Deployment RAG</b> とは、RAG システムの主要責務を単一プロセスに押し込めず、別サービスとして運用する考え方である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では <code>apps/web</code>、<code>apps/chat</code>、<code>apps/job</code>、<code>infra</code> がこの分離を担い、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> や <a href="env-contract-management.html">環境変数コントラクト管理</a> もその前提の上に組み立てられている。</p>
+
+      <h2 id="concept">なぜ分離するのか</h2>
+      <p>RAG の実運用では、ユーザーに即時応答を返す経路と、大きなファイルを解析して検索インデックスを更新する経路では、必要な計算資源も失敗の性質も異なる。Project Diana の README と local runbook はこの違いを前提にしており、chat API は request/response の境界を守り、ingest job は時間のかかる解析処理を非同期実行する。これにより ingest の遅延や OCR 失敗が、そのまま chat サービスの可用性低下に直結しにくくなる。</p>
+      <p>分離のもう一つの利点は権限の局所化である。API 側は job を起動する最小限の権限だけを持ち、文書解析そのものは job 側で完結する。この構造は <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> を API 側に集中させつつ、重い文書処理を別の失敗境界へ逃がすためのものだと言える。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <rect x="60" y="40" width="150" height="64" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="135" y="67" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">ユーザー</text>
+          <text x="135" y="88" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">browser / operator</text>
+
+          <rect x="270" y="40" width="170" height="64" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="355" y="67" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">apps/web</text>
+          <text x="355" y="88" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">workspace UI</text>
+
+          <rect x="500" y="40" width="170" height="64" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="585" y="67" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">apps/chat</text>
+          <text x="585" y="88" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">chat / files / ingest API</text>
+
+          <rect x="700" y="150" width="150" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="775" y="179" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">apps/job</text>
+          <text x="775" y="201" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">prepare + parse + index</text>
+
+          <rect x="470" y="280" width="150" height="74" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="545" y="311" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">Azure Search</text>
+          <text x="545" y="332" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">index / retrieval</text>
+
+          <rect x="650" y="280" width="170" height="74" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="735" y="311" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">Azure OpenAI</text>
+          <text x="735" y="332" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">response + metadata</text>
+
+          <rect x="80" y="280" width="210" height="74" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="185" y="311" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">docker-compose / Bicep</text>
+          <text x="185" y="332" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">split deployment topology</text>
+
+          <line x1="210" y1="72" x2="270" y2="72" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="440" y1="72" x2="500" y2="72" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="640" y1="104" x2="740" y2="150" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="570" y1="104" x2="545" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="615" y1="104" x2="720" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="740" y1="220" x2="590" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="810" y1="220" x2="730" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="210" y1="280" x2="520" y2="104" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="270" y1="317" x2="720" y2="220" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+        </svg>
+        <div class="diagram-caption">Split Deployment RAG では、Web UI、API、ingest job を分離し、chat と job が Azure Search / Azure OpenAI を別経路で利用する。</div>
+      </div>
+
+      <h2 id="boundaries">責務境界</h2>
+      <h3 id="web-boundary">Web UI の境界</h3>
+      <p><code>apps/web</code> は Next.js ベースの workspace であり、チャット、ファイル一覧、ingest 状態、trace 表示をユーザーへ見せる。ここは体験面の境界であり、検索や OCR を直接実行せず、API を呼ぶ側に徹する。結果として UI のビルドや画面遷移の変更は、ingest worker の依存関係と独立して進めやすい。</p>
+
+      <h3 id="chat-boundary">Chat API の境界</h3>
+      <p><code>apps/chat</code> は認証、threads、files、chat、streaming、observability、ingest 起動の窓口を担う。ここで重要なのは、API 自身がすべての文書変換を行うのではなく、必要に応じて job を起動する orchestration layer として振る舞う点である。つまり API はユーザーとの同期境界を守りつつ、バックグラウンド処理の入口になる。</p>
+
+      <h3 id="job-boundary">Ingest Job の境界</h3>
+      <p><code>apps/job</code> は prepare、parse、OCR、chunk、metadata、index、callback を流す非同期 worker である。CPU、メモリ、外部サービス依存が重くなりやすい処理をこの job 側へ隔離することで、chat API のプロセスを軽く保ちやすい。ここで作られる成果物は <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の記事でさらに細かく追える。</p>
+
+      <h2 id="deployment">配備にどう落ちるか</h2>
+      <p><code>docker-compose.yml</code> は local-first で、<code>chat</code>、<code>web</code>、<code>job</code> を個別サービスとして定義する。chat と web には health check があり、web は chat の healthy 状態に依存して起動する。job は compose の profile で明示起動されるため、常時動かすべき経路と必要時だけ動かす経路が分かれている。</p>
+      <p><code>infra/main.bicep</code> ではこの分離が Azure 上の実体になる。API は Container App、ingest は manual trigger の Container Apps Job、web は Static Web App として宣言され、API に対しては job スコープに限定した起動権限だけが与えられる。これは <a href="azure-container-apps-topology.html">Azure Container Apps Topology</a> や <a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a> といった派生テーマにそのままつながる。</p>
+
+      <h2 id="local-dev">ローカル検証フロー</h2>
+      <p>split deployment では、起動前に env をどうそろえるかが重要になる。Project Diana では <code>tools/render_env_profiles.py</code> が各モジュールの <code>.env.example</code> と profile override を束ねて <code>.env.local</code> を生成し、chat/job/web のそれぞれに必要な値を分配する。このため split deployment は単なるコンテナ分割ではなく、<a href="env-contract-management.html">環境変数コントラクト管理</a> と一体で運用されている。</p>
+      <p>ローカルでは <code>docker compose up --build</code> によって chat と web をまとめて立ち上げ、必要に応じて <code>docker compose --profile job run --rm job</code> で ingest を流す。これによりユーザー向け操作と文書投入の検証を別テンポで回せる。</p>
+
+      <h2 id="tradeoffs">設計上の含意</h2>
+      <p>split deployment は、スケールと可用性の面では有利だが、設定同期、コールバック契約、観測性、ロールアウト順序の管理を強く要求する。Project Diana が runbook、env contract、phase rollout、trace UI を同じ repo に置いているのは、このコストを補うためである。言い換えれば、単にサービスを分けるだけでは不十分で、分けた後の接着面をドキュメントとコードで維持する必要がある。</p>
+      <p>そのため、次に読むべき記事としては <a href="env-contract-management.html">環境変数コントラクト管理</a>、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="workspace-trace-ui.html">Workspace Trace UI</a> が自然である。さらに配備実装の細部として <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> を切り出す余地もある。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#concept">なぜ分離するのか</a></li>
+          <li><a href="#boundaries">責務境界</a></li>
+          <li class="toc-h3"><a href="#web-boundary">Web UI の境界</a></li>
+          <li class="toc-h3"><a href="#chat-boundary">Chat API の境界</a></li>
+          <li class="toc-h3"><a href="#job-boundary">Ingest Job の境界</a></li>
+          <li><a href="#deployment">配備にどう落ちるか</a></li>
+          <li><a href="#local-dev">ローカル検証フロー</a></li>
+          <li><a href="#tradeoffs">設計上の含意</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+          <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+          <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+          <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+        <li><a href="azure-container-apps-topology.html">Azure Container Apps Topology</a></li>
+        <li><a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a></li>
+        <li><a href="local-docker-compose-profile.html">Local Docker Compose Profile</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

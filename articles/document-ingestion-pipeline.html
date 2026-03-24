@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ドキュメント Ingest Pipeline - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; ドキュメント Ingest Pipeline
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">ドキュメント Ingest Pipeline</h1>
+      <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
+      <div class="article-summary">ドキュメント Ingest Pipeline は、validate から callback までを段階分割した非同期処理系である。Project Diana の job サービスでは prepare、parse、picture OCR、chunk、metadata、index を明示的に分離し、失敗コードと callback で API 境界に返している。</div>
+
+      <p><b>ドキュメント Ingest Pipeline</b> は、アップロード済み文書を検索可能な知識へ変換する一連の処理である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では <code>apps/job/job_src/entrypoint.py</code> が pipeline の骨格を持ち、<a href="split-deployment-rag.html">Split Deployment RAG</a> の worker 側責務として切り出されている。</p>
+
+      <h2 id="flow">パイプラインの全体像</h2>
+      <p>entrypoint の主経路は validate、prepare、parse、picture OCR、chunk、metadata、index、callback の順に進む。特に chunk と metadata は並列に実行され、最後に index 書き込みと callback 通知へ合流する。これは ingest を単なる PDF 解析ではなく、構造化済み検索素材を作る処理と見なしていることを示している。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 320" width="980" height="320">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <rect x="30" y="110" width="110" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="85" y="145" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">validate</text>
+
+          <rect x="170" y="110" width="110" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="225" y="145" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">prepare</text>
+
+          <rect x="310" y="110" width="110" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="365" y="145" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">parse</text>
+
+          <rect x="450" y="110" width="120" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="510" y="145" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">picture OCR</text>
+
+          <rect x="620" y="55" width="120" height="58" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="680" y="90" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">chunk</text>
+
+          <rect x="620" y="175" width="120" height="58" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="680" y="210" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">metadata</text>
+
+          <rect x="790" y="110" width="110" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="845" y="145" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">index</text>
+
+          <rect x="920" y="110" width="40" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="940" y="145" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">cb</text>
+
+          <line x1="140" y1="139" x2="170" y2="139" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="280" y1="139" x2="310" y2="139" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="420" y1="139" x2="450" y2="139" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="570" y1="139" x2="620" y2="84" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="570" y1="139" x2="620" y2="204" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="740" y1="84" x2="790" y2="139" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="740" y1="204" x2="790" y2="139" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="900" y1="139" x2="920" y2="139" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+        </svg>
+        <div class="diagram-caption">ingest job は validate から callback までを段階化し、chunk と metadata を並列に流す。</div>
+      </div>
+
+      <h2 id="prepare-stage">Prepare stage</h2>
+      <p><code>job_src.prepare</code> はダウンロード、拡張子ベースの format 判定、legacy Office 変換、事前 guard を担当する。サイズ制限、暗号化 PDF / Office 検知、ページ数上限、blob URL policy がここで先に評価され、以降の Docling 処理へ壊れた入力を持ち込まない。つまり prepare は parser の前段にある保安層である。</p>
+      <p>legacy Office 形式は LibreOffice headless で近代形式へ変換し、失敗時は PDF への fallback も持つ。ここでのエラーは <code>prepare_unsupported_format</code> や <code>prepare_page_limit_exceeded</code> などのコードで分類され、後段が generic 例外に埋もれないようになっている。</p>
+
+      <h2 id="parse-stage">Parse と OCR fallback</h2>
+      <p><code>job_src.parsing</code> は Docling の converter を組み立て、PDF / 画像では Azure Document Intelligence を使う OCR plugin を選択できる。<code>parse_mode=auto</code> の場合はまず fast parse を試し、テキスト品質が閾値を満たさないときだけ OCR へ落ちる。これはコストと速度を抑えながら、必要なときだけ精度を取りに行く戦略である。</p>
+      <p>さらに fast parse が十分な場合でも、画像内テキスト抽出に必要なら OCR snapshot だけを追加で取得する。つまり parse は単純な二択ではなく、本文品質と picture OCR の双方を見ながら最小限の OCR を行う。ここは <a href="picture-ocr-stage.html">Picture OCR Stage</a> や <a href="parse-mode-fallback.html">Parse Mode Fallback</a> として切り出せる。</p>
+
+      <h2 id="enrichment-stage">Chunk・Metadata・Index</h2>
+      <h3 id="chunk-stage">Chunk stage</h3>
+      <p><code>job_src.chunking</code> は Docling HybridChunker を使い、構造を考慮した chunk を作る。出力は生テキストだけではなく、検索用要約 <code>search_text</code>、拡張文脈 <code>context_full</code>、見出しチェーン、chunk keywords、picture OCR 由来の局所テキストまで含む。これは検索インデックスを「単なる分割結果」ではなく、後段の retrieval に最適化された素材として作ることを意味する。</p>
+
+      <h3 id="metadata-stage">Metadata stage</h3>
+      <p>metadata 生成では本文と picture OCR の内容をまとめた analysis input を使い、カテゴリやキーワードや task intent を抽出する。失敗時は degrade 可能なエラーを warning として扱い、document metadata を空配列で返して ingest 全体を止めない。これは解析補助と必須パスを分ける設計である。</p>
+
+      <h3 id="index-stage">Index stage</h3>
+      <p>最後に enriched chunk 群が Azure Search へ書き込まれる。つまり ingest pipeline の本質は「元文書を保存すること」ではなく、「retrieval が使いやすい形へ再構成すること」にある。ゆえに <a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> はこの pipeline の核心候補になる。</p>
+
+      <h2 id="callback-stage">Callback と failure model</h2>
+      <p>ingest job は成功でも失敗でも callback payload を準備し、API 側へ結果を返す。失敗時には <code>error_code</code> と detail が付与され、stage も記録される。これにより API は非同期処理の詳細を直接抱え込まずに済み、ユーザー向けには状態遷移だけを表示しつつ、運用者は詳細コードを追える。</p>
+      <p>この callback 契約は split deployment の要所であり、job と API が疎結合であるための条件でもある。さらに UI 側では trace や ingest panel へつながるため、<a href="workspace-trace-ui.html">Workspace Trace UI</a> とも接続して理解すると全体像が見えやすい。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#flow">パイプラインの全体像</a></li>
+          <li><a href="#prepare-stage">Prepare stage</a></li>
+          <li><a href="#parse-stage">Parse と OCR fallback</a></li>
+          <li><a href="#enrichment-stage">Chunk・Metadata・Index</a></li>
+          <li class="toc-h3"><a href="#chunk-stage">Chunk stage</a></li>
+          <li class="toc-h3"><a href="#metadata-stage">Metadata stage</a></li>
+          <li class="toc-h3"><a href="#index-stage">Index stage</a></li>
+          <li><a href="#callback-stage">Callback と failure model</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+          <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+          <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+          <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+          <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+        <li><a href="ingest-callback-contract.html">Ingest Callback Contract</a></li>
+        <li><a href="parse-mode-fallback.html">Parse Mode Fallback</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>環境変数コントラクト管理 - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; 環境変数コントラクト管理
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">環境変数コントラクト管理</h1>
+      <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
+      <div class="article-summary">環境変数コントラクト管理は、`env/contract.json` を source of truth として chat/job/web の設定責務を統一する運用モデルである。Project Diana では profile 生成、整合性検証、runtime access convention がこの契約を中心に組まれている。</div>
+
+      <p><b>環境変数コントラクト管理</b> とは、複数モジュールにまたがる env key の意味、所有者、必須性、profile ごとの上書きを単一の契約ファイルで管理する考え方である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では split deployment を支える基盤として <code>env/contract.json</code> が置かれ、<a href="split-deployment-rag.html">Split Deployment RAG</a> を運用可能にする接着層になっている。</p>
+
+      <h2 id="source-of-truth">Source of Truth の置き方</h2>
+      <p>ドキュメント <code>docs/env-unified-management.md</code> は、source of truth を三層で説明している。第一に <code>env/contract.json</code> が契約レジストリであり、第二に各 module の env catalog が runtime から参照されるキー定義であり、第三に <code>apps/&lt;module&gt;/.env.example</code> が base template になる。意図された関係は「catalog == base template == contract の rule union」であり、設定ファイルをただ増やすのではなく、三者の一致を維持すること自体が設計目標になっている。</p>
+      <p>この契約では key ごとに <code>owner</code>、<code>domain</code>、説明文が定義され、module 側では <code>required</code>、<code>non_local_required</code>、<code>optional</code>、<code>template</code> で分類される。つまり env の一覧表ではなく、運用ルールと責任分担を持ったメタデータ層として機能している。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 430" width="920" height="430">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <rect x="335" y="30" width="250" height="66" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="460" y="58" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">env/contract.json</text>
+          <text x="460" y="80" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">keys, rules, profiles</text>
+
+          <rect x="80" y="150" width="220" height="76" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="190" y="180" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">module env catalogs</text>
+          <text x="190" y="202" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">chat/env.py, job/env.py, web/env.ts</text>
+
+          <rect x="350" y="150" width="220" height="76" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="460" y="180" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">.env.example</text>
+          <text x="460" y="202" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">module base templates</text>
+
+          <rect x="620" y="150" width="220" height="76" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="730" y="180" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">profile overrides</text>
+          <text x="730" y="202" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">local / dev / stg / prod</text>
+
+          <rect x="250" y="300" width="220" height="76" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="360" y="330" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">render_env_profiles.py</text>
+          <text x="360" y="352" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">generated .env.&lt;profile&gt;</text>
+
+          <rect x="520" y="300" width="220" height="76" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="630" y="330" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">runtime process env</text>
+          <text x="630" y="352" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">chat / job / web startup</text>
+
+          <line x1="420" y1="96" x2="230" y2="150" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="460" y1="96" x2="460" y2="150" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="500" y1="96" x2="690" y2="150" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="460" y1="226" x2="360" y2="300" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="730" y1="226" x2="410" y2="300" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="470" y1="338" x2="520" y2="338" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+        </svg>
+        <div class="diagram-caption">env contract は catalog と template と profile override を束ね、生成済み `.env.&lt;profile&gt;` を通して runtime process environment をそろえる。</div>
+      </div>
+
+      <h2 id="contract-shape">契約ファイルの構造</h2>
+      <h3 id="key-metadata">Key metadata</h3>
+      <p><code>env/contract.json</code> の <code>keys</code> セクションには、個々の env key の説明が日本語で書かれている。ここでの説明は placeholder を禁じられており、単にキー名を繰り返すのではなく用途を説明しなければならない。これは運用者が設定値の意味を誤読しないための guard であり、設定ファイルの自己文書化を強制している。</p>
+
+      <h3 id="module-rules">Module rules</h3>
+      <p><code>rules</code> では module ごとに required / non-local-required / optional / template を分ける。たとえば chat は <code>JWT_SECRET</code> や <code>INGEST_WEBHOOK_SECRET</code> を扱い、web は公開可能な <code>NEXT_PUBLIC_*</code> 系だけを使う。このルール分離により、どの値がどの実行単位に必要かが明確になる。</p>
+
+      <h3 id="profile-overrides">Profile overrides</h3>
+      <p><code>profiles.modules.&lt;module&gt;.&lt;profile&gt;</code> には <code>local</code>、<code>dev</code>、<code>stg</code>、<code>prod</code> の上書きが入り、render 時に base template へ流し込まれる。ここで profile override は base template の部分集合でなければならず、未知キーは許されない。この制約は <a href="env-profile-rendering.html">Env Profile Rendering</a> と <a href="env-consistency-checks.html">Env Consistency Checks</a> の基礎になる。</p>
+
+      <h2 id="rendering">レンダリングと配布</h2>
+      <p><code>tools/render_env_profiles.py</code> は、選択した module と profile に対し、<code>.env.example</code> を読み込み、contract の override を差し込んで <code>.env.&lt;profile&gt;</code> を出力する。処理は単純だが重要で、profile 側が base template に存在しないキーを持つ場合はエラーで止まる。つまり render 処理そのものが drift 検知の第一段階を兼ねている。</p>
+      <p>この生成フローは split deployment で特に効く。chat、job、web が別々に起動される以上、手作業コピーで env を配るとすぐに齟齬が出る。render スクリプトを経由させることで、全モジュールが同じ契約に従って設定される。</p>
+
+      <h2 id="validation">整合性検証</h2>
+      <p><code>tools/check_env_consistency.py</code> は、contract、catalog、base template、profile override の一致を検証する。domain index が metadata と一致するか、各 profile が <code>APP_ENV</code> または <code>NEXT_PUBLIC_APP_ENV</code> を正しく設定しているか、required key に空値が残っていないかまで確認する。このスクリプトがあることで、設定ミスはデプロイ後ではなく CI や local check で発見される。</p>
+      <p>README と docs はさらに <code>make env-check</code>、<code>python tools/check_env_convention.py</code>、<code>python tools/check_env_consistency.py</code> をセットで回すよう案内している。したがって env contract は「読むだけの仕様書」ではなく、コマンドで実際に強制される契約である。</p>
+
+      <h2 id="access-pattern">実装上の access convention</h2>
+      <p>Project Diana では Python サービスが business module から直接 <code>os.getenv()</code> を呼ぶことを避け、module env alias を介して読む。web 側でも <code>process.env</code> の直接参照を限定している。これは値の取得地点を統一し、後からキーの棚卸しやテスト override をしやすくするための設計である。</p>
+      <p>この lazy read 方針は、import 時に env が確定していなくてもテストを壊しにくい。したがって env contract 管理は deployment だけの話ではなく、実装スタイルそのものにも影響している。さらに掘るなら <a href="module-env-catalogs.html">Module Env Catalogs</a> や <a href="lazy-env-access-pattern.html">Lazy Env Access Pattern</a> が派生記事になる。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#source-of-truth">Source of Truth の置き方</a></li>
+          <li><a href="#contract-shape">契約ファイルの構造</a></li>
+          <li class="toc-h3"><a href="#key-metadata">Key metadata</a></li>
+          <li class="toc-h3"><a href="#module-rules">Module rules</a></li>
+          <li class="toc-h3"><a href="#profile-overrides">Profile overrides</a></li>
+          <li><a href="#rendering">レンダリングと配布</a></li>
+          <li><a href="#validation">整合性検証</a></li>
+          <li><a href="#access-pattern">実装上の access convention</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+          <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+          <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+          <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+          <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+        <li><a href="module-env-catalogs.html">Module Env Catalogs</a></li>
+        <li><a href="lazy-env-access-pattern.html">Lazy Env Access Pattern</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

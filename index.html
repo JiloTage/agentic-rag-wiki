@@ -23,8 +23,8 @@
   </div>
 
   <div class="stats-bar">
-    <span>記事数: <span class="stat-value" id="stat-articles">0</span></span>
-    <span>リンク数: <span class="stat-value" id="stat-links">0</span></span>
+    <span>記事数: <span class="stat-value" id="stat-articles">7</span></span>
+    <span>リンク数: <span class="stat-value" id="stat-links">38</span></span>
   </div>
 
   <div class="search-container">
@@ -46,6 +46,48 @@
         </tr>
       </thead>
       <tbody>
+        <tr>
+          <td><a href="articles/docling-hybrid-chunking.html">Docling Hybrid Chunking</a></td>
+          <td>Docling Hybrid Chunking は、Project Diana の ingest job が文書を retrieval 向けの構造化チャンクへ変換する中心処理である。単純な固定長分割ではなく、見出し、context_full、検索要約、picture OCR 由来テキストを束ねた enriched chunk を作る。</td>
+          <td>2026-03-24T17:53:58+09:00</td>
+          <td>15</td>
+        </tr>
+        <tr>
+          <td><a href="articles/document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></td>
+          <td>validate から callback までを段階分割した非同期 ingest 処理系。prepare、parse、picture OCR、chunk、metadata、index を明示的に分離し、失敗コードと callback で API 境界へ返す。</td>
+          <td>2026-03-24T17:53:58+09:00</td>
+          <td>14</td>
+        </tr>
+        <tr>
+          <td><a href="articles/env-contract-management.html">環境変数コントラクト管理</a></td>
+          <td>env/contract.json を source of truth にして chat/job/web の設定責務を統一する運用モデル。profile 生成、整合性検証、runtime access convention がこの契約を中心に組まれている。</td>
+          <td>2026-03-24T17:53:58+09:00</td>
+          <td>15</td>
+        </tr>
+        <tr>
+          <td><a href="articles/env-profile-rendering.html">Env Profile Rendering</a></td>
+          <td>Env Profile Rendering は、base template と contract profile override から apps/&lt;module&gt;/.env.&lt;profile&gt; を生成する仕組みである。Project Diana では split deployment の各モジュールへ設定を配る共通経路として tools/render_env_profiles.py が使われる。</td>
+          <td>2026-03-24T17:53:58+09:00</td>
+          <td>13</td>
+        </tr>
+        <tr>
+          <td><a href="articles/policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></td>
+          <td>Policy-Enforced Retrieval は、Project Diana の chat 経路で mandatory filter と validated optional hint を組み合わせて retrieval を制御する設計である。モデル提案は検索範囲を狭められても広げられず、round policy と budget がその上で動く。</td>
+          <td>2026-03-24T17:53:58+09:00</td>
+          <td>17</td>
+        </tr>
+        <tr>
+          <td><a href="articles/project-diana-agentic-rag.html">Project Diana Agentic RAG</a></td>
+          <td>Policy-enforced retrieval と document ingest を分離デプロイで運用する private repository。FastAPI API、ingest job、Next.js ワークスペース UI、Azure Bicep 定義を単一のモノレポで束ねる。</td>
+          <td>2026-03-24T17:53:58+09:00</td>
+          <td>13</td>
+        </tr>
+        <tr>
+          <td><a href="articles/split-deployment-rag.html">Split Deployment RAG</a></td>
+          <td>対話 API、文書 ingest、Web UI を別の実行単位として分離する RAG 構成。Project Diana では応答経路と indexing 経路の失敗境界と権限境界を切り分ける。</td>
+          <td>2026-03-24T17:53:58+09:00</td>
+          <td>16</td>
+        </tr>
       </tbody>
     </table>
   </div>

@@ -1,4 +1,207 @@
 {
-  "nodes": [],
-  "links": []
+  "nodes": [
+    {
+      "id": "project-diana-agentic-rag",
+      "title": "Project Diana Agentic RAG",
+      "url": "articles/project-diana-agentic-rag.html",
+      "summary": "Policy-enforced retrieval と document ingest を分離デプロイで運用する private repository。",
+      "is_root": true
+    },
+    {
+      "id": "split-deployment-rag",
+      "title": "Split Deployment RAG",
+      "url": "articles/split-deployment-rag.html",
+      "summary": "対話 API、文書 ingest、Web UI を別の実行単位として分離する RAG 構成。",
+      "is_root": false
+    },
+    {
+      "id": "env-contract-management",
+      "title": "環境変数コントラクト管理",
+      "url": "articles/env-contract-management.html",
+      "summary": "env/contract.json を source of truth にして chat/job/web の設定責務を統一する運用モデル。",
+      "is_root": false
+    },
+    {
+      "id": "document-ingestion-pipeline",
+      "title": "ドキュメント Ingest Pipeline",
+      "url": "articles/document-ingestion-pipeline.html",
+      "summary": "validate から callback までを段階分割した非同期 ingest 処理系。",
+      "is_root": false
+    },
+    {
+      "id": "docling-hybrid-chunking",
+      "title": "Docling Hybrid Chunking",
+      "url": "articles/docling-hybrid-chunking.html",
+      "summary": "文書を retrieval 向けの enriched chunk へ変換する ingest job の中心処理。",
+      "is_root": false
+    },
+    {
+      "id": "policy-enforced-retrieval",
+      "title": "Policy-Enforced Retrieval",
+      "url": "articles/policy-enforced-retrieval.html",
+      "summary": "mandatory filter と validated optional hint で検索範囲を制御する chat 側 retrieval 設計。",
+      "is_root": false
+    },
+    {
+      "id": "env-profile-rendering",
+      "title": "Env Profile Rendering",
+      "url": "articles/env-profile-rendering.html",
+      "summary": "base template と profile override から apps/<module>/.env.<profile> を生成する仕組み。",
+      "is_root": false
+    }
+  ],
+  "links": [
+    {
+      "source": "docling-hybrid-chunking",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "docling-hybrid-chunking",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "docling-hybrid-chunking",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "docling-hybrid-chunking",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "docling-hybrid-chunking",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "document-ingestion-pipeline",
+      "target": "docling-hybrid-chunking"
+    },
+    {
+      "source": "document-ingestion-pipeline",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "document-ingestion-pipeline",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "document-ingestion-pipeline",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "document-ingestion-pipeline",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "env-contract-management",
+      "target": "docling-hybrid-chunking"
+    },
+    {
+      "source": "env-contract-management",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "env-contract-management",
+      "target": "env-profile-rendering"
+    },
+    {
+      "source": "env-contract-management",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "env-contract-management",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "env-contract-management",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "env-profile-rendering",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "env-profile-rendering",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "env-profile-rendering",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "env-profile-rendering",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "policy-enforced-retrieval",
+      "target": "docling-hybrid-chunking"
+    },
+    {
+      "source": "policy-enforced-retrieval",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "policy-enforced-retrieval",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "policy-enforced-retrieval",
+      "target": "env-profile-rendering"
+    },
+    {
+      "source": "policy-enforced-retrieval",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "policy-enforced-retrieval",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "project-diana-agentic-rag",
+      "target": "docling-hybrid-chunking"
+    },
+    {
+      "source": "project-diana-agentic-rag",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "project-diana-agentic-rag",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "project-diana-agentic-rag",
+      "target": "env-profile-rendering"
+    },
+    {
+      "source": "project-diana-agentic-rag",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "project-diana-agentic-rag",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "docling-hybrid-chunking"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "env-profile-rendering"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "project-diana-agentic-rag"
+    }
+  ]
 }

@@ -1,5 +1,214 @@
 {
-  "articles": {},
-  "root_id": null,
-  "total_count": 0
+  "articles": {
+    "project-diana-agentic-rag": {
+      "slug": "project-diana-agentic-rag",
+      "title": "Project Diana Agentic RAG",
+      "filename": "articles/project-diana-agentic-rag.html",
+      "summary": "Policy-enforced retrieval と document ingest を分離デプロイで運用する private repository。FastAPI API、ingest job、Next.js ワークスペース UI、Azure Bicep 定義を単一のモノレポで束ねる。",
+      "created_at": "2026-03-24T17:33:23+09:00",
+      "updated_at": "2026-03-24T17:53:58+09:00",
+      "origin": "root",
+      "source_id": null,
+      "links_to": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "env-profile-rendering",
+        "policy-enforced-retrieval",
+        "split-deployment-rag",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "env-profile-rendering",
+        "policy-enforced-retrieval",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "done"
+    },
+    "split-deployment-rag": {
+      "slug": "split-deployment-rag",
+      "title": "Split Deployment RAG",
+      "filename": "articles/split-deployment-rag.html",
+      "summary": "対話 API、文書 ingest、Web UI を別の実行単位として分離する RAG 構成。Project Diana では応答経路と indexing 経路の失敗境界と権限境界を切り分ける。",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "updated_at": "2026-03-24T17:53:58+09:00",
+      "origin": "expanded",
+      "source_id": "project-diana-agentic-rag",
+      "links_to": [
+        "api-job-trigger-boundary",
+        "azure-container-apps-topology",
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "env-profile-rendering",
+        "local-docker-compose-profile",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "env-profile-rendering",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag"
+      ],
+      "expansion_status": "done"
+    },
+    "env-contract-management": {
+      "slug": "env-contract-management",
+      "title": "環境変数コントラクト管理",
+      "filename": "articles/env-contract-management.html",
+      "summary": "env/contract.json を source of truth にして chat/job/web の設定責務を統一する運用モデル。profile 生成、整合性検証、runtime access convention がこの契約を中心に組まれている。",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "updated_at": "2026-03-24T17:53:58+09:00",
+      "origin": "expanded",
+      "source_id": "project-diana-agentic-rag",
+      "links_to": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-profile-rendering",
+        "lazy-env-access-pattern",
+        "module-env-catalogs",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-profile-rendering",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "done"
+    },
+    "document-ingestion-pipeline": {
+      "slug": "document-ingestion-pipeline",
+      "title": "ドキュメント Ingest Pipeline",
+      "filename": "articles/document-ingestion-pipeline.html",
+      "summary": "validate から callback までを段階分割した非同期 ingest 処理系。prepare、parse、picture OCR、chunk、metadata、index を明示的に分離し、失敗コードと callback で API 境界へ返す。",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "updated_at": "2026-03-24T17:53:58+09:00",
+      "origin": "expanded",
+      "source_id": "project-diana-agentic-rag",
+      "links_to": [
+        "docling-hybrid-chunking",
+        "env-contract-management",
+        "ingest-callback-contract",
+        "parse-mode-fallback",
+        "picture-ocr-stage",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "docling-hybrid-chunking",
+        "env-contract-management",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "done"
+    },
+    "docling-hybrid-chunking": {
+      "slug": "docling-hybrid-chunking",
+      "title": "Docling Hybrid Chunking",
+      "filename": "articles/docling-hybrid-chunking.html",
+      "summary": "Docling Hybrid Chunking は、Project Diana の ingest job が文書を retrieval 向けの構造化チャンクへ変換する中心処理である。単純な固定長分割ではなく、見出し、context_full、検索要約、picture OCR 由来テキストを束ねた enriched chunk を作る。",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T17:53:58+09:00",
+      "origin": "expanded",
+      "source_id": "document-ingestion-pipeline",
+      "links_to": [
+        "chunk-oversize-splitting",
+        "context-full-construction",
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "parse-mode-fallback",
+        "picture-ocr-stage",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "search-summary-enrichment",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "pending"
+    },
+    "policy-enforced-retrieval": {
+      "slug": "policy-enforced-retrieval",
+      "title": "Policy-Enforced Retrieval",
+      "filename": "articles/policy-enforced-retrieval.html",
+      "summary": "Policy-Enforced Retrieval は、Project Diana の chat 経路で mandatory filter と validated optional hint を組み合わせて retrieval を制御する設計である。モデル提案は検索範囲を狭められても広げられず、round policy と budget がその上で動く。",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T17:53:58+09:00",
+      "origin": "expanded",
+      "source_id": "project-diana-agentic-rag",
+      "links_to": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "env-profile-rendering",
+        "live-retrieval-lanes",
+        "project-diana-agentic-rag",
+        "retrieval-budgeting",
+        "retrieval-round-policy",
+        "split-deployment-rag",
+        "taxonomy-driven-metadata-validation",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "env-profile-rendering",
+        "project-diana-agentic-rag",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "pending"
+    },
+    "env-profile-rendering": {
+      "slug": "env-profile-rendering",
+      "title": "Env Profile Rendering",
+      "filename": "articles/env-profile-rendering.html",
+      "summary": "Env Profile Rendering は、base template と contract profile override から apps/<module>/.env.<profile> を生成する仕組みである。Project Diana では split deployment の各モジュールへ設定を配る共通経路として tools/render_env_profiles.py が使われる。",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T17:53:58+09:00",
+      "origin": "expanded",
+      "source_id": "env-contract-management",
+      "links_to": [
+        "check-mode-drift-detection",
+        "env-consistency-checks",
+        "env-contract-management",
+        "local-docker-compose-profile",
+        "module-env-catalogs",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "rendered-runtime-env-files",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "env-contract-management",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "pending"
+    }
+  },
+  "root_id": "project-diana-agentic-rag",
+  "total_count": 7
 }

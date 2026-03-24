@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docling Hybrid Chunking - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Docling Hybrid Chunking
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Docling Hybrid Chunking</h1>
+      <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
+      <div class="article-summary">Docling Hybrid Chunking は、Project Diana の ingest job が文書を retrieval 向けの構造化チャンクへ変換する中心処理である。単純な固定長分割ではなく、見出し、context_full、検索要約、picture OCR 由来テキストを束ねた enriched chunk を作る。</div>
+
+      <p><b>Docling Hybrid Chunking</b> は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の chunk stage に相当する実装であり、<code>job_src.chunking</code> を中心に組み立てられている。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> 全体では、この stage が生文書を <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> で使いやすい証拠へ変換する橋渡しになる。</p>
+
+      <h2 id="role">なぜ Hybrid Chunking なのか</h2>
+      <p>この実装が目指しているのは、文書をただ短く刻むことではない。検索時に使う短い要約、回答時に使う広めの文脈、見出しチェーン、chunk keywords、picture OCR で補われた断片までまとめて 1 つの retrieval 単位にすることが目的である。したがって chunking は前処理ではあるが、実際には検索品質を左右するモデル化工程である。</p>
+      <p>固定トークンの sliding window であれば実装は簡単だが、見出し境界や table のまとまりを壊しやすい。Project Diana は Docling の HybridChunker を基盤にし、構造を優先しながら後段で oversize split を補助する方針を採る。これは <a href="split-deployment-rag.html">Split Deployment RAG</a> の job 側で、計算コストを払ってでも retrieval 素材を整える選択だと言える。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" width="960" height="360">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <rect x="35" y="145" width="120" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="95" y="179" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">Docling doc</text>
+
+          <rect x="190" y="145" width="140" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="260" y="171" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">synthetic heading</text>
+          <text x="260" y="190" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">if no heading exists</text>
+
+          <rect x="365" y="145" width="140" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="435" y="179" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">HybridChunker</text>
+
+          <rect x="540" y="65" width="155" height="58" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="617" y="91" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">picture OCR assign</text>
+          <text x="617" y="110" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">chunk-local ownership</text>
+
+          <rect x="540" y="225" width="155" height="58" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="617" y="251" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">oversize split</text>
+          <text x="617" y="270" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">text / table fallback</text>
+
+          <rect x="735" y="145" width="180" height="58" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="825" y="171" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#202122">enriched chunks</text>
+          <text x="825" y="190" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">search_text + context_full + keywords</text>
+
+          <line x1="155" y1="174" x2="190" y2="174" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="330" y1="174" x2="365" y2="174" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="505" y1="174" x2="735" y2="174" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="505" y1="174" x2="540" y2="94" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="505" y1="174" x2="540" y2="254" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="695" y1="94" x2="770" y2="145" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="695" y1="254" x2="770" y2="203" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+        </svg>
+        <div class="diagram-caption">Docling Hybrid Chunking は、見出し補完、HybridChunker、OCR 割当、oversize split を経て enriched chunk を生成する。</div>
+      </div>
+
+      <h2 id="structure">構造情報をどう保持するか</h2>
+      <p>実装はまず、見出しが存在しない文書に synthetic root heading を挿入する。これにより見出しベースの文脈抽出が常に成立しやすくなる。続いて HybridChunker が文書構造を使って raw chunk を作り、後段では <code>search_headings</code> として見出しチェーンを保つ。</p>
+      <p>この設計の狙いは、回答生成で引用を組み立てる際に section 文脈を失わないことにある。特に <a href="context-full-construction.html">Context Full Construction</a> のような派生テーマで重要になるが、chunk の短い本文だけではなく、その周囲の節構造を追跡できることが retrieval の品質を安定させる。</p>
+
+      <h2 id="enrichment">検索用の enrichment</h2>
+      <p>この chunk stage は raw text を返して終わらない。OpenAI を用いた要約生成により <code>search_text</code> を作り、chunk keywords も併せて抽出する。つまり chunk は「文書の断片」ではなく「検索システムに渡すための説明付き断片」へ変換される。</p>
+      <p>また <code>context_full</code> は Markdown export を元に heading boundary まで前後を拡張し、必要なら sentence boundary で切り詰める。これは全文を突っ込むのでも、断片だけに頼るのでもなく、回答生成に使うちょうど中間の粒度を作る工夫である。ここから <a href="search-summary-enrichment.html">Search Summary Enrichment</a> や <a href="context-full-construction.html">Context Full Construction</a> を掘る余地がある。</p>
+
+      <h2 id="ocr">Picture OCR との結合</h2>
+      <p>chunking 実装は <a href="picture-ocr-stage.html">Picture OCR Stage</a> の結果を chunk-local に割り当てる。重要なのは、OCR テキストを文書全体へ均等にばらまくのではなく、doc item id、ref、page などを手がかりに「この画像はどの chunk に属するか」を推定している点である。これにより図表や埋め込み画像のラベルが、関係の薄い chunk へ汚染的に混ざりにくい。</p>
+      <p>また oversize split が入る場合でも、chunk-level OCR を先頭の派生 chunk にだけ残す設計になっている。これは OCR テキストの重複によって検索ランキングが歪むのを避けるための処理であり、検索素材のノイズ制御として合理的である。</p>
+
+      <h2 id="fallbacks">Oversize split と fallback</h2>
+      <p>構造優先の chunking だけでは、巨大な table や長文 section に対処しきれない。そこで実装は token 閾値を超えた chunk を検出し、table なら header を保ちながら行単位で、通常テキストなら sentence boundary で分割する。これが <a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a> に対応する部分である。</p>
+      <p>さらに parse 前段では <a href="parse-mode-fallback.html">Parse Mode Fallback</a> があり、fast parse と OCR parse の切り替えが起こる。つまり chunk stage 単体ではなく、parse mode と OCR quality の選択が前提条件になっている。</p>
+
+      <h2 id="implications">Retrieval への含意</h2>
+      <p>最終的にこの stage の成果物は、検索時に候補 evidence として扱われ、回答時に引用可能な reference へ再利用される。したがって chunk quality は単に recall の問題ではなく、引用の自然さ、回答の groundedness、ランキングの安定性に直結する。ここで作られた enriched chunk が <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の入力になるため、chunking と retrieval は別工程でも密接に結び付いている。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#role">なぜ Hybrid Chunking なのか</a></li>
+          <li><a href="#structure">構造情報をどう保持するか</a></li>
+          <li><a href="#enrichment">検索用の enrichment</a></li>
+          <li><a href="#ocr">Picture OCR との結合</a></li>
+          <li><a href="#fallbacks">Oversize split と fallback</a></li>
+          <li><a href="#implications">Retrieval への含意</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+          <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+          <li><a href="context-full-construction.html">Context Full Construction</a></li>
+          <li><a href="search-summary-enrichment.html">Search Summary Enrichment</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+        <li><a href="parse-mode-fallback.html">Parse Mode Fallback</a></li>
+        <li><a href="context-full-construction.html">Context Full Construction</a></li>
+        <li><a href="search-summary-enrichment.html">Search Summary Enrichment</a></li>
+        <li><a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

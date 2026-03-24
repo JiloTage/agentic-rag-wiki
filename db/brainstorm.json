@@ -1,4 +1,237 @@
 {
-  "queue": [],
-  "history": []
+  "queue": [
+    {
+      "proposed_slug": "retrieval-round-policy",
+      "proposed_title": "Retrieval Round Policy",
+      "rationale": "max_live_retrieval_rounds と tool round executor の停止条件を切り出すと、policy enforcement の上にある対話制御が見える。",
+      "interestingness_score": 0.88,
+      "source_id": "policy-enforced-retrieval",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "azure-container-apps-topology",
+      "proposed_title": "Azure Container Apps Topology",
+      "rationale": "Container App と Container Apps Job と Static Web App の分担は split deployment の実装そのものである。",
+      "interestingness_score": 0.87,
+      "source_id": "split-deployment-rag",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "env-consistency-checks",
+      "proposed_title": "Env Consistency Checks",
+      "rationale": "contract、catalog、template、profile を突き合わせる検証は運用 drift 防止の中心にある。",
+      "interestingness_score": 0.86,
+      "source_id": "env-contract-management",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "context-full-construction",
+      "proposed_title": "Context Full Construction",
+      "rationale": "chunk ごとに context_full を組み立てる処理は要約 text と並ぶ検索品質の核である。",
+      "interestingness_score": 0.86,
+      "source_id": "docling-hybrid-chunking",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "picture-ocr-stage",
+      "proposed_title": "Picture OCR Stage",
+      "rationale": "本文抽出と画像 OCR をどう切り分けて併用するかは parse 戦略の理解に直結する。",
+      "interestingness_score": 0.85,
+      "source_id": "document-ingestion-pipeline",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "workspace-trace-ui",
+      "proposed_title": "Workspace Trace UI",
+      "rationale": "trace modal と workspace shell は説明責任と運用デバッグを担うため、UI 観点で独立記事化しやすい。",
+      "interestingness_score": 0.84,
+      "source_id": "project-diana-agentic-rag",
+      "created_at": "2026-03-24T17:33:23+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "search-summary-enrichment",
+      "proposed_title": "Search Summary Enrichment",
+      "rationale": "検索結果用 summary を chunking 段階で別フィールド化する設計は retrieval 体験に直結する。",
+      "interestingness_score": 0.84,
+      "source_id": "docling-hybrid-chunking",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "taxonomy-driven-metadata-validation",
+      "proposed_title": "Taxonomy-Driven Metadata Validation",
+      "rationale": "validated optional hint を taxonomy と metadata schema で正規化する箇所は policy safety の下支えである。",
+      "interestingness_score": 0.83,
+      "source_id": "policy-enforced-retrieval",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "ingest-callback-contract",
+      "proposed_title": "Ingest Callback Contract",
+      "rationale": "job と API の境界を成立させる callback payload 契約は split deployment の重要な接点である。",
+      "interestingness_score": 0.82,
+      "source_id": "document-ingestion-pipeline",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "retrieval-budgeting",
+      "proposed_title": "Retrieval Budgeting",
+      "rationale": "retrieved_chunks_budget や extended budget の扱いは回答品質とコストを左右する。",
+      "interestingness_score": 0.81,
+      "source_id": "policy-enforced-retrieval",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "parse-mode-fallback",
+      "proposed_title": "Parse Mode Fallback",
+      "rationale": "auto から fast / ocr へ切り替える条件は、速度と品質の折衷点を説明しやすい。",
+      "interestingness_score": 0.8,
+      "source_id": "document-ingestion-pipeline",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "api-job-trigger-boundary",
+      "proposed_title": "API-Job Trigger Boundary",
+      "rationale": "API が job を起動するだけで解析を抱え込まない境界設計は、責務分離を説明する上で重要である。",
+      "interestingness_score": 0.79,
+      "source_id": "split-deployment-rag",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "chunk-oversize-splitting",
+      "proposed_title": "Chunk Oversize Splitting",
+      "rationale": "oversize chunk を safety margin 付きで再分割する条件は hybrid chunking の実務的な肝である。",
+      "interestingness_score": 0.78,
+      "source_id": "docling-hybrid-chunking",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "module-env-catalogs",
+      "proposed_title": "Module Env Catalogs",
+      "rationale": "chat/env.py、job/env.py、web/env.ts の catalog を比較すると module ごとの責務分担が見える。",
+      "interestingness_score": 0.77,
+      "source_id": "env-contract-management",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "live-retrieval-lanes",
+      "proposed_title": "Live Retrieval Lanes",
+      "rationale": "workspace/live/search_results の lane 分岐は retrieval policy が UI と結ぶ接点である。",
+      "interestingness_score": 0.76,
+      "source_id": "policy-enforced-retrieval",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "rendered-runtime-env-files",
+      "proposed_title": "Rendered Runtime Env Files",
+      "rationale": "render 結果の .env.<profile> を runtime 配布物として扱う前提を独立に説明できる。",
+      "interestingness_score": 0.75,
+      "source_id": "env-profile-rendering",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "local-docker-compose-profile",
+      "proposed_title": "Local Docker Compose Profile",
+      "rationale": "chat と web を常時起動し、job を profile で分ける local-first 運用は実務上の再現性が高い。",
+      "interestingness_score": 0.74,
+      "source_id": "split-deployment-rag",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "check-mode-drift-detection",
+      "proposed_title": "Check-Mode Drift Detection",
+      "rationale": "check モードでファイル生成なしに drift を検出する運用は安全な環境更新の要である。",
+      "interestingness_score": 0.73,
+      "source_id": "env-profile-rendering",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "lazy-env-access-pattern",
+      "proposed_title": "Lazy Env Access Pattern",
+      "rationale": "直接 os.getenv を避け、module alias から遅延参照する実装方針はテストと保守の両方に効く。",
+      "interestingness_score": 0.72,
+      "source_id": "env-contract-management",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    }
+  ],
+  "history": [
+    {
+      "proposed_slug": "split-deployment-rag",
+      "proposed_title": "Split Deployment RAG",
+      "rationale": "Project Diana の最上位アーキテクチャ概念であり、chat/job/web の分離理由を独立に説明できる。",
+      "interestingness_score": 0.95,
+      "source_id": "project-diana-agentic-rag",
+      "created_at": "2026-03-24T17:33:23+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T17:42:07+09:00"
+    },
+    {
+      "proposed_slug": "env-contract-management",
+      "proposed_title": "環境変数コントラクト管理",
+      "rationale": "env/contract.json を source of truth にした設定ガバナンスがこの repo の差別化要素になっている。",
+      "interestingness_score": 0.93,
+      "source_id": "project-diana-agentic-rag",
+      "created_at": "2026-03-24T17:33:23+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T17:42:07+09:00"
+    },
+    {
+      "proposed_slug": "document-ingestion-pipeline",
+      "proposed_title": "ドキュメント Ingest Pipeline",
+      "rationale": "prepare から callback までを段階分割した worker 設計は、RAG 品質と運用性の核心にある。",
+      "interestingness_score": 0.91,
+      "source_id": "project-diana-agentic-rag",
+      "created_at": "2026-03-24T17:33:23+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T17:42:07+09:00"
+    },
+    {
+      "proposed_slug": "docling-hybrid-chunking",
+      "proposed_title": "Docling Hybrid Chunking",
+      "rationale": "検索用要約、context_full、構造化 chunk をどう生成するかは ingest 品質の核心である。",
+      "interestingness_score": 0.9,
+      "source_id": "document-ingestion-pipeline",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T17:53:58+09:00"
+    },
+    {
+      "proposed_slug": "policy-enforced-retrieval",
+      "proposed_title": "Policy-Enforced Retrieval",
+      "rationale": "API、orchestrator、observability がどのように retrieval policy を強制するかを別記事で掘る価値が高い。",
+      "interestingness_score": 0.89,
+      "source_id": "project-diana-agentic-rag",
+      "created_at": "2026-03-24T17:33:23+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T17:53:58+09:00"
+    },
+    {
+      "proposed_slug": "env-profile-rendering",
+      "proposed_title": "Env Profile Rendering",
+      "rationale": "render_env_profiles.py が base template と profile override をどう結合するかを独立に説明できる。",
+      "interestingness_score": 0.88,
+      "source_id": "env-contract-management",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T17:53:58+09:00"
+    }
+  ]
 }
