@@ -25,13 +25,13 @@
     <main class="wiki-main">
       <h1 class="article-title">Env Profile Rendering</h1>
       <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
-      <div class="article-summary">Env Profile Rendering は、base template と contract profile override から `apps/<module>/.env.<profile>` を生成する仕組みである。Project Diana では split deployment の各モジュールへ設定を配る共通経路として `tools/render_env_profiles.py` が使われる。</div>
+      <div class="article-summary">Env Profile Rendering は、テンプレート（ひな形）とプロファイル（環境ごとの設定）を合わせて、アプリが使う設定ファイル（`apps/<module>/.env.<profile>`）を自動で作る仕組みです。Project Diana では、chat・job・web の 3 つのアプリに設定を届けるために `tools/render_env_profiles.py` というスクリプトを使います。</div>
 
-      <p><b>Env Profile Rendering</b> は、<a href="env-contract-management.html">環境変数コントラクト管理</a> を実際の runtime file へ落とすためのスクリプト処理である。Project Diana では <code>tools/render_env_profiles.py</code> が chat、job、web の base template を読み、profile override を適用して <code>.env.local</code> などの実行用ファイルを生成する。</p>
+      <p><b>Env Profile Rendering</b> は、<a href="env-contract-management.html">環境変数コントラクト管理</a> で決めたルールをもとに、アプリが実際に使う設定ファイルを作る処理です。Project Diana では、<code>tools/render_env_profiles.py</code> というスクリプトが chat・job・web のひな形ファイルを読み込みます。そして、プロファイル（本番用・開発用などの環境ごとの設定）に合わせて値を書き換え、<code>.env.local</code> のようなファイルを出力します。</p>
 
       <h2 id="inputs">入力は 3 つある</h2>
-      <p>この render 処理が依存するのは、contract、base template、module/profile の選択である。contract からは上書き値を読み、<code>apps/chat/.env.example</code>、<code>apps/job/.env.example</code>、<code>apps/web/.env.example</code> が置換対象になる。つまり render は自由入力ではなく、あらかじめ契約化されたキー集合にだけ作用する。</p>
-      <p>この前提があるからこそ、<a href="split-deployment-rag.html">Split Deployment RAG</a> でも chat と job と web に同じ基準で設定を配れる。単なるテンプレートコピーではなく、モジュールごとの base file を維持しながら profile 差分だけを当てる点が重要である。</p>
+      <p>この処理には 3 つの入力があります。1 つ目は、コントラクト（「どの設定項目を、どんな値に変えてよいか」を決めたルール）です。2 つ目は、ベーステンプレート（<code>apps/chat/.env.example</code>、<code>apps/job/.env.example</code>、<code>apps/web/.env.example</code>）です。3 つ目は、どのアプリのどのプロファイルを使うかの指定です。コントラクトで許可された項目だけが変わるので、想定外の値が入り込む心配がありません。</p>
+      <p>この仕組みのおかげで、<a href="split-deployment-rag.html">Split Deployment RAG</a> でも chat・job・web に同じ方法で設定を届けられます。ひな形をまるごとコピーするのではなく、各アプリの元ファイルはそのまま残して、環境ごとに違う部分だけを上書きします。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 360" width="930" height="360">
@@ -66,23 +66,23 @@
           <line x1="755" y1="130" x2="380" y2="230" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
           <line x1="430" y1="265" x2="520" y2="265" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
         </svg>
-        <div class="diagram-caption">Env Profile Rendering は contract と base template を結合し、生成済み `.env.<profile>` を経由して runtime process environment を準備する。</div>
+        <div class="diagram-caption">コントラクト（ルール）とベーステンプレート（ひな形）を合わせて `.env.<profile>` ファイルを作り、各アプリの起動時に必要な設定を届けます。</div>
       </div>
 
       <h2 id="algorithm">render スクリプトがしていること</h2>
-      <p>スクリプトはまず contract を読み、module と profile の選択を正規化する。続いて base template を 1 行ずつ読み、環境変数代入に一致する行だけを override で置換する。ここで override 側に base template に存在しないキーがあるとエラーになるため、profile 定義がテンプレートから逸脱した時点で検出できる。</p>
-      <p>さらに <code>--check</code> モードでは生成せず、既存の <code>.env.&lt;profile&gt;</code> が render 結果と一致するかだけを見る。これは CI 上で drift を見つけるための用途に向いており、<a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a> として切り出せる論点である。</p>
+      <p>スクリプトは、まずコントラクトを読み込みます。次に、指定されたアプリとプロファイルを確認します。そしてひな形ファイルを 1 行ずつ見ていき、該当する設定項目の値だけを書き換えます。もしひな形に存在しない項目を書き換えようとすると、エラーになります。これにより、設定の間違いを早めに見つけられます。</p>
+      <p><code>--check</code> モードを使うと、ファイルを作らずに、今ある <code>.env.&lt;profile&gt;</code> が最新の内容と合っているかだけを調べられます。CI（自動テストの仕組み）で「設定が古くなっていないか」を確認するのに便利です。くわしくは <a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a> をご覧ください。</p>
 
       <h2 id="module-differences">モジュール差分の扱い</h2>
-      <p>chat と job は Python サービスであり、search、OpenAI、Storage、webhook secret など多くの key を持つ一方、web の template はほぼ <code>NEXT_PUBLIC_API_BASE_URL</code> と <code>NEXT_PUBLIC_APP_ENV</code> に限られる。render スクリプトはこの差を抽象化しない。むしろ module ごとに base template を分けたまま、共通アルゴリズムだけを提供する。</p>
-      <p>この設計は、各 module の責務が異なることを隠さないという意味で妥当である。<a href="module-env-catalogs.html">Module Env Catalogs</a> を見ると、chat と job の env 空間が大きく異なり、それでも同じ render フローに乗っていることが分かる。</p>
+      <p>chat と job は Python で書かれており、検索・OpenAI・ストレージなど、たくさんの設定項目があります。一方、web は <code>NEXT_PUBLIC_API_BASE_URL</code> と <code>NEXT_PUBLIC_APP_ENV</code> くらいしかありません。render スクリプトは、この違いを無理に 1 つにまとめません。アプリごとにひな形は別々のまま、共通の処理だけをまとめています。</p>
+      <p>この作りは、各アプリの役割が違うことをそのまま表しています。<a href="module-env-catalogs.html">Module Env Catalogs</a> を見ると、chat と job では必要な設定がかなり違うのに、同じ render の手順で処理できていることがわかります。</p>
 
       <h2 id="ops">運用上の意味</h2>
-      <p>Project Diana の README と runbook では、ローカル起動前に <code>python tools/render_env_profiles.py --module ... --profile local</code> を実行する前提になっている。これは runtime コードが <code>load_dotenv()</code> に依存せず、生成済み env file を process environment に流し込む構造だからである。つまり render は開発補助ではなく、起動手順の正式な一部である。</p>
-      <p>また、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> で使う policy 系 env や top-k 系 env も、この render によって profile 別に供給される。したがって env profile rendering は、単なる設定配布ではなく挙動切替の入口でもある。</p>
+      <p>Project Diana では、ローカルでアプリを動かす前に <code>python tools/render_env_profiles.py --module ... --profile local</code> を実行します。アプリは <code>load_dotenv()</code> を使わず、このスクリプトで作ったファイルから設定を読み込む仕組みだからです。つまり render は「あると便利なツール」ではなく、起動に必要な手順の一部です。</p>
+      <p>また、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>（ポリシーに従った検索の制御）で使う設定や、top-k（検索結果を上位何件まで使うかの数）も、この render で環境ごとに用意されます。そのため、env profile rendering は設定を配るだけでなく、アプリの動き方を切り替える入口にもなっています。</p>
 
       <h2 id="next">次に読むべき周辺</h2>
-      <p>この仕組みをさらに分解するなら、contract と template の整合を確かめる <a href="env-consistency-checks.html">Env Consistency Checks</a>、module ごとの定義差分を追う <a href="module-env-catalogs.html">Module Env Catalogs</a>、生成されたファイルそのものを扱う <a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a> が自然である。ローカル運用寄りには <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> もつながる。</p>
+      <p>もっとくわしく知りたい方は、次の記事がおすすめです。ルールとひな形がちゃんと合っているかを確認する <a href="env-consistency-checks.html">Env Consistency Checks</a>。アプリごとの設定項目の違いをまとめた <a href="module-env-catalogs.html">Module Env Catalogs</a>。生成されたファイルそのものについて書かれた <a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a>。ローカル開発については <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> も関連します。</p>
     </main>
 
     <aside class="wiki-sidebar">

@@ -25,16 +25,16 @@
     <main class="wiki-main">
       <h1 class="article-title">Project Diana Agentic RAG</h1>
       <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
-      <div class="article-summary">Project Diana Agentic RAG は、policy-enforced retrieval と document ingest を分離デプロイで運用するための private repository である。FastAPI API、ingest job、Next.js ワークスペース UI、Azure Bicep 定義を単一のモノレポで束ね、実装と運用手順を同時に管理している。</div>
+      <div class="article-summary">Project Diana Agentic RAG は、ACES が作っている RAG（質問に答えるとき、関連する文書を自動で探してきて使う仕組み）のプロジェクトです。API サーバー、文書の取り込み、Web 画面、Azure へのデプロイ設定が、すべて 1 つのリポジトリにまとまっています。決められたルールに従って情報を検索する仕組みになっていて、それぞれのサービスを別々に動かせるように設計されています。</div>
 
-      <p><b>Project Diana Agentic RAG</b> は、ACES の private GitHub repository <code>aces-inc/project-diana-agentic-rag</code> として管理されている Agentic RAG 基盤である。README の定義では「policy-enforced KB retrieval + split deployment」が中心思想であり、<a href="split-deployment-rag.html">Split Deployment RAG</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="env-contract-management.html">環境変数コントラクト管理</a> を同時に扱う設計が採られている。</p>
+      <p><b>Project Diana Agentic RAG</b> は、ACES の GitHub リポジトリ <code>aces-inc/project-diana-agentic-rag</code> で開発されています。このシステムには 2 つの大きな特徴があります。1 つ目は「ルールに基づいて検索する」こと、2 つ目は「サービスを分けてデプロイする」ことです。<a href="split-deployment-rag.html">Split Deployment RAG</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="env-contract-management.html">環境変数コントラクト管理</a> という 3 つの考え方をベースにしています。</p>
 
       <h2 id="overview">リポジトリの位置づけ</h2>
-      <p>このリポジトリは default branch が <code>master</code> の monorepo であり、単純な API 実装ではなく、検索付きチャット、非同期 ingest、フロントエンド作業領域、Azure への配備定義、検証 runbook までをひとまとめにしている。トップレベル README から見える責務は <code>apps/chat</code>、<code>apps/job</code>、<code>apps/web</code>、<code>infra</code> の 4 つに整理されており、単一プロセスではなく役割分離を前提にした運用を意識している。</p>
-      <p>特徴的なのは、RAG の実装だけでなく運用規約も同じ repo に置かれている点である。たとえば <code>docs/split-local-dev.md</code> は local runbook を、<code>docs/env-unified-management.md</code> は設定ガバナンスを、<code>env/contract.json</code> は各モジュールの環境変数契約を担う。したがってこの repo は「アプリコードの置き場」だけではなく、開発・検証・ロールアウトの共通仕様書でもある。</p>
+      <p>このリポジトリは、メインブランチが <code>master</code> のモノレポ（複数のプロジェクトを 1 つのリポジトリにまとめたもの）です。チャット API、文書の取り込み、Web 画面、Azure のデプロイ設定、テスト手順書まで、全部ここに入っています。フォルダは大きく <code>apps/chat</code>、<code>apps/job</code>、<code>apps/web</code>、<code>infra</code> の 4 つに分かれていて、それぞれ別のサービスとして動きます。</p>
+      <p>面白いのは、コードだけでなく運用のルールもこのリポジトリに入っていることです。たとえば <code>docs/split-local-dev.md</code> にはローカル環境の立ち上げ方が書いてあります。<code>docs/env-unified-management.md</code> には設定の管理ルールがあります。<code>env/contract.json</code> には、どのモジュールにどの環境変数が必要かの一覧があります。つまり、このリポジトリはコードの保管場所であると同時に、開発チームのルールブックでもあるのです。</p>
 
       <h2 id="architecture">全体アーキテクチャ</h2>
-      <p>構成は split deployment 型で、ユーザー体験を持つ <code>apps/web</code>、API 制御層の <code>apps/chat</code>、非同期 ingest を担当する <code>apps/job</code> が明確に分かれている。さらに Azure Search、Azure OpenAI、Document Intelligence、Storage などの周辺サービスが Bicep 定義と env contract を通じて結び付けられている。これは、検索応答と文書取り込みを同じサーバーに押し込まず、責務ごとにスケールと失敗境界を分けるための構成と読める。</p>
+      <p>システムは「分離デプロイ」という形で動いています。ユーザーが使う画面（<code>apps/web</code>）、API サーバー（<code>apps/chat</code>）、文書の取り込み処理（<code>apps/job</code>）が、それぞれ別のサービスとして独立しています。Azure Search や Azure OpenAI などの外部サービスとは、Bicep（Azure のインフラ設定ファイル）と環境変数でつながっています。この仕組みのおかげで、チャットと文書処理を別々に増やしたり減らしたりできます。また、片方が止まっても、もう片方への影響が少なくなります。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 430" width="920" height="430">
@@ -93,44 +93,44 @@
           <line x1="790" y1="211" x2="790" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
           <line x1="705" y1="211" x2="440" y2="280" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
         </svg>
-        <div class="diagram-caption">Project Diana Agentic RAG の split deployment 構成。env contract が web/chat/job を横断し、chat と job が Azure サービス群を分担して利用する。</div>
+        <div class="diagram-caption">Project Diana Agentic RAG のサービス構成図です。環境変数の設定ファイル（env contract）が web・chat・job の 3 つで共有されています。chat と job は、それぞれ必要な Azure サービスを使います。</div>
       </div>
 
       <h2 id="modules">主要モジュール</h2>
       <h3 id="chat-api">Chat API</h3>
-      <p><code>apps/chat</code> は FastAPI ベースの API サービスであり、<code>chat_src.api.app</code> から <code>auth</code>、<code>files</code>、<code>threads</code>、<code>chat</code>、<code>chat_stream</code>、<code>ingest</code>、<code>observability</code> の各 router が組み込まれている。CORS、correlation and observability middleware、統一エラーペイロード、retryable 判定が入口で揃えられているため、RAG 本体よりも前段の API 契約と運用観測性に強く寄っていることが分かる。</p>
-      <p>依存関係には <code>fastapi</code>、<code>openai</code>、<code>azure-search-documents</code>、<code>azure-ai-agents</code>、Table/Blob Storage 系ライブラリが含まれており、検索結果の取得だけでなく認証、ファイル状態、履歴保存、ingest 起動まで同じサービス境界で扱う構成である。strict 対象に orchestrator や runtime support 群が列挙されている点からも、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> をアプリケーションの中核に置いていることが読み取れる。</p>
+      <p><code>apps/chat</code> は FastAPI で作られた API サーバーです。<code>chat_src.api.app</code> の中に、いくつかの機能がまとまっています。ログイン認証（<code>auth</code>）、ファイル管理（<code>files</code>）、会話の管理（<code>threads</code>）、チャット（<code>chat</code>、<code>chat_stream</code>）、文書の取り込み開始（<code>ingest</code>）、そして動作の監視（<code>observability</code>）です。リクエストを受け取るところで、エラーの形式をそろえたり、再試行の判定をしたりしていて、使いやすさと運用のしやすさを大切にしています。</p>
+      <p>主なライブラリは <code>fastapi</code>、<code>openai</code>、<code>azure-search-documents</code>、<code>azure-ai-agents</code> などです。この API サーバーは検索だけでなく、認証やファイル管理、会話の保存、文書取り込みの開始も担当します。特に大事なのは <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>（決められたルールに従って検索する仕組み）で、これがアプリの中心になっています。</p>
 
       <h3 id="ingest-job">Ingest Job</h3>
-      <p><code>apps/job</code> は文書投入を非同期実行する worker であり、<code>job_src.entrypoint</code> では validate、prepare、parse、picture OCR、chunk、metadata、index、callback という段階的な pipeline が明示されている。特に parse と OCR を分け、chunking と metadata 生成を並列に実行し、最後に index 書き込みと callback 配信へ流す設計は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> を独立サービスとして切り出した理由をよく示している。</p>
-      <p>依存には <code>docling</code>、<code>pypdf</code>、<code>tiktoken</code>、<code>torch</code>、<code>azure-search-documents</code>、<code>openai</code> が含まれる。これは単なる PDF 分割ではなく、OCR、分類、埋め込み、検索用 enriched chunk の生成まで job 側で完結させる意図を表す。エラー分類コードや degrade 可能な metadata 失敗の扱いも実装されており、運用上の失敗モードを最初から想定している。</p>
+      <p><code>apps/job</code> は、文書を取り込む処理を裏側で実行するプログラムです。<code>job_src.entrypoint</code> の中では、次の順番で処理が進みます。まずファイルの検証、次に準備、解析、画像の OCR（画像から文字を読み取ること）、文書の分割、メタデータの追加、検索インデックスへの登録、そして完了の通知です。このように多くのステップがあるため、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> として独立したサービスに分けられています。</p>
+      <p>使っているライブラリは <code>docling</code>、<code>pypdf</code>、<code>tiktoken</code>、<code>torch</code>、<code>azure-search-documents</code>、<code>openai</code> などです。PDF を分割するだけではなく、OCR で文字を読み取ったり、内容を分類したり、検索できるようにデータを整えたりと、幅広い処理を行います。エラーが起きても全体を止めずに続ける仕組みも入っています。</p>
 
       <h3 id="web-ui">Web Workspace</h3>
-      <p><code>apps/web</code> は Next.js 16 と React 18.3 を使った workspace UI であり、<code>app/page.tsx</code> は <code>WorkspaceShell</code> を中心に構成される。Shell には <code>AuthCard</code>、<code>ChatPanel</code>、<code>FilesPanel</code>、<code>IngestPanel</code>、<code>ThreadPanel</code>、<code>TraceModal</code> がぶら下がっており、単一のチャット画面ではなく、認証済みユーザーが知識ベース管理と会話を横断する作業領域として設計されている。</p>
-      <p>README と local runbook が示す「streaming trace panels」という表現どおり、この UI は回答本文だけでなく retrieval、reasoning、citation を追える観測面を持つ。したがって <a href="workspace-trace-ui.html">Workspace Trace UI</a> は単なる見た目の話ではなく、agentic retrieval の説明責任とデバッグ効率を担う要素である。</p>
+      <p><code>apps/web</code> は Next.js 16 と React 18.3 で作られた Web 画面です。メインページ <code>app/page.tsx</code> には、<code>WorkspaceShell</code> という大枠の中にいくつかの画面パーツが入っています。ログイン画面（<code>AuthCard</code>）、チャット画面（<code>ChatPanel</code>）、ファイル一覧（<code>FilesPanel</code>）、取り込み状態の表示（<code>IngestPanel</code>）、会話一覧（<code>ThreadPanel</code>）、処理の追跡表示（<code>TraceModal</code>）です。ただのチャット画面ではなく、文書の管理と会話をまとめてできる作業スペースになっています。</p>
+      <p>この画面では、AI の回答だけでなく「どの文書を探したか」「どう考えたか」「どこを引用したか」もその場で見ることができます。<a href="workspace-trace-ui.html">Workspace Trace UI</a> はデザインの話ではなく、AI がなぜその回答をしたのかを確認したり、問題を調べたりするための大事な機能です。</p>
 
       <h3 id="infra">Infra</h3>
-      <p><code>infra/main.bicep</code> は Azure を前提に、Container Apps の API アプリ、manual trigger の ingest job、Static Web App、Storage Account、Table Storage、job 起動用 role assignment を定義している。API と job が別の実行単位として構成され、API 側には job 起動権限だけをスコープ限定で与えているため、アーキテクチャ図だけでなく権限境界も split deployment の考え方に沿っている。</p>
-      <p>この Bicep は Azure Search と Azure OpenAI の接続情報、knowledge base 名、JWT と webhook secret などを secure parameter として受け取り、実行環境へ注入する。つまりリポジトリの infra 層は、RAG 推論基盤と業務 API をつなぐ配線図であると同時に、デプロイ時の責務分担をコード化した部分でもある。</p>
+      <p><code>infra/main.bicep</code> は、Azure 上のインフラ（サーバーやストレージなど）をコードで書いた設定ファイルです。API 用の Container App、文書取り込み用の job、Web 画面用の Static Web App、データ保存用の Storage Account などが書かれています。API と job は別々に動くようになっていて、API には「job を起動する権限だけ」が与えられています。権限の面でも、サービスをきちんと分ける考え方が守られています。</p>
+      <p>この Bicep ファイルには、Azure Search や Azure OpenAI への接続先、ナレッジベースの名前、認証に使う秘密鍵なども安全な形で渡されます。つまり、このファイルは「どのサービスをどうつなぐか」の設計図であり、デプロイするときの役割分担をコードとして残したものです。</p>
 
       <h2 id="operations">設定と運用モデル</h2>
       <h3 id="env-contract">Env Contract</h3>
-      <p>この repo を特徴づける最大の仕組みの一つが <code>env/contract.json</code> を source of truth に据えた env governance である。ここには key の owner、domain、説明、module 別の required/non-local-required/optional ルール、さらに <code>local</code>、<code>dev</code>、<code>stg</code>、<code>prod</code> の profile override が整理されている。ドキュメントは、module catalog、<code>.env.example</code>、contract の 3 者を一致させることを明示しており、<a href="env-contract-management.html">環境変数コントラクト管理</a> そのものが実装の一部になっている。</p>
-      <p>重要なのは、Python サービスが runtime で <code>load_dotenv()</code> を使わず、process environment のみを読むと明記している点である。これは import 時の副作用を避けつつ、CI 検証と local override を両立するための方針であり、設定読み出しの一貫性を高めている。</p>
+      <p>このリポジトリで特に大事な仕組みが、<code>env/contract.json</code> を使った環境変数の管理です。このファイルには、それぞれの環境変数について「誰が管理するか」「どんな種類か」「何のためか」「どのモジュールで必要か」が書かれています。また、<code>local</code>、<code>dev</code>、<code>stg</code>、<code>prod</code> といった環境ごとの値も入っています。ルールとして、モジュール一覧・<code>.env.example</code>・contract の 3 つは常に合わせておく必要があります。こうした <a href="env-contract-management.html">環境変数コントラクト管理</a> が、開発の進め方の一部になっています。</p>
+      <p>もう 1 つ注目したいのは、Python のサービスでは <code>load_dotenv()</code> を使わず、OS の環境変数だけを読むようにしていることです。こうすると、コードを動かしたときに予想外の動きが起きにくくなります。CI でのテストと、ローカルでの設定変更を両立しやすくなるメリットもあります。</p>
 
       <h3 id="local-validation">Local Validation とロールアウト</h3>
-      <p>起動方法は Docker あり・なしの両方が README に整理されているが、推奨は <code>docker compose up --build</code> を使う local-first 運用である。API は <code>/health</code> と <code>/ready</code> を持ち、web は port 3000、chat は port 8000 を基本にする。テスト面では chat/job の <code>pytest</code>、web の <code>vitest</code> と Playwright、env convention/consistency check、さらに OpenSpec validation が用意されているため、実装・契約・UI の三層で検証する体制になっている。</p>
-      <p><code>docs/split-local-dev.md</code> には <code>ROLLOUT_PHASE</code> を用いた段階的な release gate も記されており、Retrieval dependency health や phase 4 migration rollback まで手順化されている。つまりこの repo は PoC 的な RAG 実験場ではなく、段階的デプロイと失敗時の後退戦略を持つ運用対象として設計されている。</p>
+      <p>起動方法は、Docker を使う場合と使わない場合の両方が README に書かれています。おすすめは <code>docker compose up --build</code> を使う方法です。API には <code>/health</code> と <code>/ready</code> という状態確認の仕組みがあります。web は port 3000、chat は port 8000 で動きます。テストは 3 種類あります。chat と job のテストには <code>pytest</code>、web のテストには <code>vitest</code> と Playwright、設定の整合性チェックには env のチェックツールを使います。コード・設定・画面の 3 つの面からテストできる体制です。</p>
+      <p><code>docs/split-local-dev.md</code> には、<code>ROLLOUT_PHASE</code> を使って段階的にリリースする手順も書かれています。問題が起きたときに前のバージョンに戻す方法まで手順化されています。つまり、このリポジトリは実験的な RAG ではなく、少しずつリリースして、問題があれば戻せる「本番運用を前提としたシステム」として作られています。</p>
 
       <h2 id="reading-lenses">読み解くポイント</h2>
-      <p>この repo を理解するときは、単に「どのモデルを呼んでいるか」を追うだけでは不十分である。むしろ次の 4 観点で読むと構造が見えやすい。</p>
+      <p>このリポジトリを理解するには、「どの AI モデルを使っているか」を見るだけでは足りません。次の 4 つの視点で読むと、全体の仕組みがわかりやすくなります。</p>
       <ul>
-        <li>chat と job を分けることで、対話応答と文書処理の失敗境界をどのように切っているか。</li>
-        <li>env contract によって、モジュールごとの設定責務をどこまで機械的に検証しているか。</li>
-        <li>trace UI と observability route により、検索根拠と推論経路をどこまで可視化しているか。</li>
-        <li>runbook、phase rollout、infra 定義まで含めて、RAG システムを「継続運用する製品」として扱っているか。</li>
+        <li>chat と job を分けることで、チャットの応答と文書処理のエラーをどう切り離しているか。</li>
+        <li>env contract を使って、モジュールごとの設定を自動でチェックできるようにしているか。</li>
+        <li>trace UI や監視の仕組みで、「なぜその検索結果を返したか」をどこまで見えるようにしているか。</li>
+        <li>運用手順書、段階的リリース、インフラ定義まで含めて、RAG を「ずっと使い続ける製品」として扱っているか。</li>
       </ul>
-      <p>次に掘るべき記事候補としては、<a href="split-deployment-rag.html">Split Deployment RAG</a>、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="workspace-trace-ui.html">Workspace Trace UI</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="env-contract-management.html">環境変数コントラクト管理</a> が自然である。これらを分解すると、Project Diana Agentic RAG の設計思想をサービス境界、設定、UI、運用の各面から再構成できる。</p>
+      <p>次に読むとよい記事は、<a href="split-deployment-rag.html">Split Deployment RAG</a>、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="workspace-trace-ui.html">Workspace Trace UI</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="env-contract-management.html">環境変数コントラクト管理</a> です。これらを読むと、Project Diana Agentic RAG の設計の考え方を、サービスの分け方・設定・画面・運用のそれぞれの面から理解できます。</p>
     </main>
 
     <aside class="wiki-sidebar">

@@ -25,13 +25,13 @@
     <main class="wiki-main">
       <h1 class="article-title">Retrieval Round Policy</h1>
       <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
-      <div class="article-summary">Retrieval Round Policy は、Project Diana の chat orchestrator が retrieval round を <code>mandatory_broad</code> → <code>optional_narrowing</code> → <code>optional_relaxed</code> の順に進める制御である。accepted metadata hint と残予算を見ながら round budget を切り、out-of-order な緩和を防ぐ。</div>
+      <div class="article-summary">Retrieval Round Policy は、Project Diana のチャット機能が文書を検索するときの「進め方のルール」です。まず <code>mandatory_broad</code>（広く探す）、次に <code>optional_narrowing</code>（絞り込む）、最後に <code>optional_relaxed</code>（条件をゆるめる）の順に進みます。ヒント情報や残りの検索回数を見ながら各ステップの上限を決め、順番を飛ばさないようにしています。</div>
 
-      <p><b>Retrieval Round Policy</b> は、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> を実際の retrieval call 列へ落とし込む運用則である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の chat orchestrator は、round 数、accepted metadata hint、残予算をもとに毎回の検索条件を決め、<a href="split-deployment-rag.html">Split Deployment RAG</a> の API 経路で無秩序な filter 緩和が起きないよう固定している。</p>
+      <p><b>Retrieval Round Policy</b> は、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>（ポリシーに従って検索を制御する仕組み）の中で、「どの順番で検索を呼び出すか」を決めるルールです。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> のチャット機能は、検索の回数、メタデータヒント（文書に付いた分類タグのこと）、残りの検索回数をもとに条件を決めます。<a href="split-deployment-rag.html">Split Deployment RAG</a> の API では、このルールのおかげで勝手にフィルタがゆるめられるのを防いでいます。</p>
 
       <h2 id="sequence">Round の並び順</h2>
-      <p><code>resolve_round_policy()</code> は round 数から適用名を決める。1 回目は <code>mandatory_broad</code> で optional hint を使わず、2 回目は <code>optional_narrowing</code> で accepted label / category / intent を投入し、3 回目以降は <code>optional_relaxed</code> へ移る。つまり最初は mandatory constraint だけで広く取り、次に狭め、最後に再び緩める。</p>
-      <p>この順序は、metadata hint を最初から強く信じすぎないためのものである。hint が欠落していても round 1 は成立し、hint が reject された場合は <code>optional_hints_rejected_or_missing</code> を理由として保持したまま round 2 を進める。hint の質は <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> と downstream metadata quality に依存するため、round policy は ingest 側の品質変動も吸収する役目を持つ。</p>
+      <p><code>resolve_round_policy()</code> は、検索が何回目かに応じて、どのルールを使うかを決めます。1 回目は <code>mandatory_broad</code> です。ヒント情報は使わず、広く検索します。2 回目は <code>optional_narrowing</code> です。使えると判断されたラベルやカテゴリで絞り込みます。3 回目以降は <code>optional_relaxed</code> になり、条件を少しゆるめます。</p>
+      <p>この順番にしている理由は、ヒント情報を最初から信じすぎないためです。ヒントがなくても 1 回目の検索は問題なく動きます。ヒントが使えないと判断された場合は、<code>optional_hints_rejected_or_missing</code> という理由を記録して 2 回目に進みます。ヒントの正確さは <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>（文書を取り込む処理）の出来に左右されます。そのため、ラウンドポリシーは取り込み側の品質のばらつきも吸収する役割を持っています。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 320" width="940" height="320">
@@ -63,28 +63,28 @@
           <text x="465" y="249" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">allowed_next: None → mandatory_broad → optional_narrowing → optional_relaxed</text>
           <text x="465" y="268" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">順序違反は policy_order_violation として失敗扱いになる</text>
         </svg>
-        <div class="diagram-caption">round 数だけで段階を決めるのではなく、許可された遷移順そのものを固定して retrieval を制御する。</div>
+        <div class="diagram-caption">検索の回数だけで段階を決めるのではなく、「次にどの段階に進めるか」の順番をあらかじめ固定して検索を制御します。</div>
       </div>
 
       <h2 id="guard">順序ガード</h2>
-      <p><code>allowed_next</code> は前回適用名から許される次状態を定義している。たとえば <code>mandatory_broad</code> の直後に進めるのは、同じ <code>mandatory_broad</code> か <code>optional_narrowing</code> だけであり、いきなり <code>optional_relaxed</code> へ飛ぶことは violation になる。このため「結果が少ないからすぐ緩める」という ad-hoc 分岐が入り込みにくい。</p>
-      <p>このガードは <a href="round-order-violation-guards.html">Round Order Violation Guards</a> として独立記事化できるほど重要で、検索品質よりも先に policy stability を守る。特に mandatory constraint を伴う system では、round 制御の逸脱は ranking の揺らぎではなく契約違反へ直結する。</p>
+      <p><code>allowed_next</code> は、「今の段階のあとに進んでよい次の段階」を決めています。たとえば <code>mandatory_broad</code> のあとに進めるのは、同じ <code>mandatory_broad</code> か <code>optional_narrowing</code> だけです。いきなり <code>optional_relaxed</code> に飛ぶとエラー（violation）になります。こうすることで、「結果が少ないからすぐ条件をゆるめよう」という場当たり的な動きを防いでいます。</p>
+      <p>このガード（安全装置）は <a href="round-order-violation-guards.html">Round Order Violation Guards</a> という別の記事にするほど大切な仕組みです。検索の質よりも先に、ルールどおりに動いているかを守ります。特に必須の制約があるシステムでは、順番の逸脱は検索結果のブレではなく、ルール違反に直結します。</p>
 
       <h2 id="budget">Round budget</h2>
-      <p><code>round_budget_snapshot()</code> は <code>top_k_vector</code>、<code>top_k_final</code>、<code>planned_retrieval_calls</code>、<code>validation_log</code> を使って、その round で使える candidate budget と rerank budget を切り出す。まず global budget を <code>max_tool_rounds</code> 分だけ確保し、すでに消費した分を引いてから、その時点の per-query budget を計算する。</p>
-      <p>さらに <code>normalize_optimize_priority()</code> により priority は <code>quality</code> / <code>latency</code> / <code>cost</code> の三択へ正規化される。latency は候補数を半分程度まで絞り、cost は三分の一程度まで圧縮する。つまり round policy は単なる順序制御ではなく、<a href="retrieval-budgeting.html">Retrieval Budgeting</a> と <a href="optimization-priority-modes.html">Optimization Priority Modes</a> を伴う資源配分ルールでもある。</p>
-      <p>この設定は env 経由で runtime に入るため、誤った priority や round 数を見逃さないことも重要になる。したがって round policy の安定性は <a href="env-contract-management.html">環境変数コントラクト管理</a> と <a href="env-consistency-checks.html">Env Consistency Checks</a> の整備に支えられている。</p>
+      <p><code>round_budget_snapshot()</code> は、<code>top_k_vector</code>、<code>top_k_final</code>、<code>planned_retrieval_calls</code>、<code>validation_log</code> といった値を使って、そのラウンドで使える検索の「予算」（候補の数や並べ替えの回数）を計算します。まず全体の予算を <code>max_tool_rounds</code> の回数分だけ確保し、すでに使った分を引いてから、1 回の検索あたりの予算を出します。</p>
+      <p>さらに <code>normalize_optimize_priority()</code> によって、優先する方針が <code>quality</code>（品質重視）/ <code>latency</code>（速度重視）/ <code>cost</code>（コスト重視）の 3 つに整理されます。速度重視なら候補数を半分くらいに減らし、コスト重視なら 3 分の 1 くらいに減らします。つまりラウンドポリシーは順番を決めるだけでなく、<a href="retrieval-budgeting.html">Retrieval Budgeting</a>（検索の予算管理）や <a href="optimization-priority-modes.html">Optimization Priority Modes</a>（最適化の方針）と連携して、リソースの配分も行います。</p>
+      <p>これらの設定は環境変数としてアプリに渡されます。そのため、間違った方針やラウンド数が設定されないようにすることが大切です。ラウンドポリシーの安定性は、<a href="env-contract-management.html">環境変数コントラクト管理</a> と <a href="env-consistency-checks.html">Env Consistency Checks</a> がしっかり整備されていることで支えられています。</p>
 
       <h2 id="executor">Tool round executor への落とし込み</h2>
-      <p><code>ToolRoundExecutor</code> は pending retrieval を集めて非同期に dispatch し、結果の消費は元の tool-call 順に戻す。各 query には <code>validation_log</code>、accepted / rejected metadata、effective filter fingerprint、budget snapshot が残され、後段の answer pass や diagnostics に引き渡される。このため round policy は pure function では終わらず、実行系と監査ログの両方に書き込まれる。</p>
-      <p>結果が返ると executor は evidence を dedup し、<code>azure_score * (0.6 + 0.4 * subquestion_weight)</code> で再ランキングして selected references を作る。ここで複数 subquestion にまたがる予算配分が効いてくるため、<a href="multi-query-budget-splitting.html">Multi-Query Budget Splitting</a> の観点でも読む価値がある。</p>
+      <p><code>ToolRoundExecutor</code> は、まだ実行されていない検索をまとめて同時に実行し、結果を元の呼び出し順に並べ直します。それぞれの検索には、<code>validation_log</code>（検証の記録）、使われたヒント・使われなかったヒント、フィルタの内容、予算の記録が残ります。これらは、あとの回答生成やトラブル調査に使われます。つまりラウンドポリシーは計算して終わりではなく、実行と記録の両方に関わっています。</p>
+      <p>検索結果が返ってくると、executor は重複する結果を取り除きます。そして <code>azure_score * (0.6 + 0.4 * subquestion_weight)</code> という計算式で並べ替えて、参考にする文書を選びます。複数の質問にまたがる予算の配分がここで効いてくるため、<a href="multi-query-budget-splitting.html">Multi-Query Budget Splitting</a> も合わせて読むと理解が深まります。</p>
 
       <h2 id="fallbacks">Fallback の意味</h2>
-      <p>round policy には主に三種類の fallback がある。accepted hint が空のときの <code>optional_hints_rejected_or_missing</code>、later round への移行理由である <code>later_round_relaxation</code>、そして残予算が尽きたときの <code>round_budget_exhausted</code> である。いずれも silent fallback ではなく validation log と query result に残る。</p>
-      <p>この設計により、trace 上で「なぜ narrow されなかったか」「なぜ later round に進んだか」を説明できる。観測面では <a href="workspace-trace-ui.html">Workspace Trace UI</a> や <a href="live-retrieval-lanes.html">Live Retrieval Lanes</a> が、そのまま round policy の可視化レイヤーになる。</p>
+      <p>ラウンドポリシーには、主に 3 種類のフォールバック（代替の動き方）があります。ヒントが使えなかったときの <code>optional_hints_rejected_or_missing</code>、次のラウンドに進む理由を示す <code>later_round_relaxation</code>、そして検索の予算を使い切ったときの <code>round_budget_exhausted</code> です。どれも黙って切り替わるのではなく、検証ログと検索結果の両方に記録が残ります。</p>
+      <p>この仕組みのおかげで、あとから「なぜ絞り込みが行われなかったのか」「なぜ次のラウンドに進んだのか」を調べることができます。<a href="workspace-trace-ui.html">Workspace Trace UI</a> や <a href="live-retrieval-lanes.html">Live Retrieval Lanes</a> を使えば、ラウンドポリシーの動きを画面上で確認できます。</p>
 
       <h2 id="system">システム全体での位置づけ</h2>
-      <p>round policy は <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の一部だが、実際には ingest で付与された metadata、runtime env の設定、observability まで含む横断的な制御層である。したがって retrieval の誤作動を調べるときは、policy article だけでなく、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="env-consistency-checks.html">Env Consistency Checks</a>、<a href="taxonomy-driven-metadata-validation.html">Taxonomy-Driven Metadata Validation</a> を併せて見る必要がある。</p>
+      <p>ラウンドポリシーは <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の一部ですが、実際には文書の取り込み時に付けられたメタデータ、環境変数の設定、動作の監視まで関わる横断的な仕組みです。そのため、検索がうまく動かないときは、この記事だけでなく、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="env-consistency-checks.html">Env Consistency Checks</a>、<a href="taxonomy-driven-metadata-validation.html">Taxonomy-Driven Metadata Validation</a>（分類ルールに基づくメタデータの検証）も合わせて確認してください。</p>
     </main>
 
     <aside class="wiki-sidebar">

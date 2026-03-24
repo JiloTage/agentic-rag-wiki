@@ -25,12 +25,12 @@
     <main class="wiki-main">
       <h1 class="article-title">Azure Container Apps Topology</h1>
       <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
-      <div class="article-summary">Azure Container Apps Topology は、Project Diana の <code>infra/main.bicep</code> が split deployment を Azure 上の API Container App、manual Container Apps Job、Static Web App、Storage Table 群として具体化する配備構成である。API には ingest job だけを起動する scoped role assignment が与えられる。</div>
+      <div class="article-summary">Azure Container Apps Topology は、Project Diana の各サービスを Azure 上にどう並べるかを決めた設計図です。<code>infra/main.bicep</code> というファイルひとつで、API サーバー、データ取り込みジョブ、Web 画面、データ保存用テーブルをまとめて作れます。API には「取り込みジョブを動かす」ために必要な最低限の権限だけを渡します。</div>
 
-      <p><b>Azure Container Apps Topology</b> は、<a href="split-deployment-rag.html">Split Deployment RAG</a> を Azure の実リソースへ落とした構成である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の <code>infra/main.bicep</code> は、API を Container App、ingest を manual trigger の Container Apps Job、UI を Static Web App として分離し、単一プロセス化ではなく役割別配備を明示している。</p>
+      <p><b>Azure Container Apps Topology</b> は、<a href="split-deployment-rag.html">Split Deployment RAG</a>（サービスを役割ごとに分けてデプロイするやり方）を Azure の実際のサービスで実現したものです。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の <code>infra/main.bicep</code> を見ると、API は Container App、データ取り込みは Container Apps Job、Web 画面は Static Web App という形で、それぞれ別のサービスとして動かしています。</p>
 
       <h2 id="map">リソース配置</h2>
-      <p>Bicep はまず managed environment、image、search / OpenAI endpoint、secret 群を受け取り、<code>diana-api-&lt;env&gt;</code>、<code>diana-ingest-&lt;env&gt;</code>、<code>diana-web-&lt;env&gt;</code> を組み立てる。さらに storage account を作成し、<code>ingeststatus</code> と <code>chathistory</code> の table を切るため、API と job の責務分離だけでなく状態格納先も topology の一部として定義される。</p>
+      <p>Bicep テンプレートには、まず「どの環境か」「どのコンテナイメージを使うか」「検索サービスや OpenAI の接続先」「シークレット（パスワードなどの秘密情報）」を渡します。すると、<code>diana-api-&lt;env&gt;</code>、<code>diana-ingest-&lt;env&gt;</code>、<code>diana-web-&lt;env&gt;</code> という3つのサービスが作られます。さらに、データを保存するための Storage Account も作られて、<code>ingeststatus</code> と <code>chathistory</code> という2つのテーブルができます。つまり、この1つのテンプレートで、サービスもデータの保存先もまとめて管理できます。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420">
@@ -69,25 +69,25 @@
           <path d="M 290 84 C 330 84, 340 84, 380 84" fill="none" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
           <text x="335" y="64" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">job start</text>
         </svg>
-        <div class="diagram-caption">API、manual ingest job、Static Web App、storage tables を同一テンプレートで束ね、job 起動だけを API に委譲する。</div>
+        <div class="diagram-caption">API、データ取り込みジョブ、Web 画面、データ保存テーブルの4つを、1つのテンプレートでまとめて作ります。ジョブを動かせるのは API だけです。</div>
       </div>
 
       <h2 id="api">API Container App</h2>
-      <p>API app は external ingress と <code>targetPort: 8000</code> を持ち、1Gi / 0.5 CPU の単位で <code>minReplicas: 1</code>、<code>maxReplicas: 3</code> を取る。secret には Search key、OpenAI key、JWT secret、ingest webhook secret、auth user JSON が入り、runtime env には <code>AZURE_CONTAINERAPPS_JOB_NAME</code> や table 名も注入される。つまり <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> と ingest 起動 API は、同じ API app の runtime contract 上に載っている。</p>
+      <p>API アプリはインターネットからアクセスできるようになっていて、ポート番号は <code>targetPort: 8000</code> です。使えるメモリは 1Gi、CPU は 0.5 で、常に最低1台、最大3台まで自動で増減します（<code>minReplicas: 1</code>、<code>maxReplicas: 3</code>）。パスワードや API キーなどの秘密情報として、Search のキー、OpenAI のキー、JWT の秘密鍵などが設定されています。環境変数には <code>AZURE_CONTAINERAPPS_JOB_NAME</code> やテーブル名も含まれます。つまりこの API アプリは、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>（ルールに基づいて検索する機能）と、データ取り込みジョブを動かす機能の両方を持っています。</p>
 
       <h2 id="job">Manual ingest job</h2>
-      <p>ingest 側は <code>Microsoft.App/jobs</code> として manual trigger で定義され、<code>replicaTimeout: 900</code>、<code>replicaRetryLimit: 1</code>、<code>parallelism: 1</code> を持つ。job container は 2Gi / 1 CPU と API より重く、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> を想定した資源配分になっている。検索や OpenAI の secret は共有するが、JWT secret など API 専用の責務は持たない。</p>
+      <p>データ取り込み（ingest）は <code>Microsoft.App/jobs</code> として作られていて、必要なときに手動で動かします。最大実行時間は <code>replicaTimeout: 900</code>（15分）で、失敗したら1回だけやり直します（<code>replicaRetryLimit: 1</code>）。同時に動くのは1つだけです（<code>parallelism: 1</code>）。ジョブは 2Gi / 1 CPU で、API よりもパワーがあります。これは <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>（文書を読み込んで検索できるようにする処理）が重い処理だからです。Search や OpenAI のキーは API と同じものを使いますが、JWT の秘密鍵など API だけに必要なものは持っていません。</p>
 
       <h2 id="scope">権限の絞り込み</h2>
-      <p>Bicep は API app の system-assigned identity に対し、subscription ではなく ingest job resource だけを scope とする role assignment を付ける。コメントにもある通り built-in role は Contributor だが、割り当て範囲を job に限定することで、API が持つ権限を「ingest start に必要な最小セット」へ押し込めている。これは <a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a> や <a href="job-scope-role-assignment.html">Job Scope Role Assignment</a> にそのまま接続する。</p>
+      <p>Bicep では、API アプリに「マネージド ID」（Azure が自動で管理してくれるログイン情報）を与えます。そのとき、Azure 全体ではなく、ingest ジョブだけを操作できる権限に絞っています。権限の種類は Contributor ですが、範囲をジョブだけに限定しているので、API ができることは「取り込みジョブを動かす」ことだけです。もしもっと詳しく知りたい場合は、<a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a> や <a href="job-scope-role-assignment.html">Job Scope Role Assignment</a> を見てください。</p>
 
       <h2 id="parity">ローカルとの対応</h2>
-      <p><code>docker-compose.yml</code> は cloud topology のローカル縮約版である。chat と web は常時サービスとして立ち上がり、web は chat の healthy 状態に依存する。job は <code>profiles: [\"job\"]</code> に入っており、必要時だけ明示起動される。この対比によって <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> と Azure 配備の mental model が一致する。</p>
-      <p>ただし local と cloud の差分は env 配布で吸収しなければならない。したがって topology の再現性は <a href="env-profile-rendering.html">Env Profile Rendering</a> と <a href="env-consistency-checks.html">Env Consistency Checks</a> に大きく依存する。</p>
+      <p><code>docker-compose.yml</code> を使うと、Azure 上の構成をローカル PC でも再現できます。chat と web は常に動くサービスとして起動します。web は chat が動いていないと使えません。ジョブは <code>profiles: [\"job\"]</code> というグループに入っていて、使いたいときだけ手動で起動します。この仕組みは <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> で詳しく説明しています。</p>
+      <p>ローカルとクラウドでは環境変数の値が違うので、その差を正しく設定する必要があります。環境変数ファイルの作り方は <a href="env-profile-rendering.html">Env Profile Rendering</a>、設定に間違いがないかの確認は <a href="env-consistency-checks.html">Env Consistency Checks</a> で行います。</p>
 
       <h2 id="implications">運用上の含意</h2>
-      <p>この topology では API と job が storage table を共有しつつ、UI は Static Web App として別配備になる。そのため rollout の論点は、コードだけでなく status table schema、secret wiring、build output path にも及ぶ。言い換えると split deployment の本体は「サービスを分ける」ことではなく、分けたリソース間の contract を維持することにある。</p>
-      <p>次に掘るべき派生記事としては <a href="storage-backed-status-tables.html">Storage-Backed Status Tables</a> と <a href="static-web-app-build-contract.html">Static Web App Build Contract</a> が自然である。</p>
+      <p>この構成では、API とジョブは同じ Storage Table を使いますが、Web 画面は Static Web App として別にデプロイされます。そのため、デプロイのときはコードだけでなく、テーブルの形、秘密情報の設定、ビルドの出力先なども合わせる必要があります。サービスを分けること自体は難しくありませんが、分けたサービス同士の「約束ごと」をきちんと守ることが大切です。</p>
+      <p>関連する話題として、<a href="storage-backed-status-tables.html">Storage-Backed Status Tables</a> と <a href="static-web-app-build-contract.html">Static Web App Build Contract</a> があります。</p>
     </main>
 
     <aside class="wiki-sidebar">

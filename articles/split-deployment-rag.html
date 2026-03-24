@@ -25,13 +25,13 @@
     <main class="wiki-main">
       <h1 class="article-title">Split Deployment RAG</h1>
       <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
-      <div class="article-summary">Split Deployment RAG は、対話 API、文書 ingest、Web UI を別の実行単位として分離する RAG 構成である。Project Diana ではこの分離により、応答経路と indexing 経路の失敗境界、権限境界、スケール戦略を切り分けている。</div>
+      <div class="article-summary">Split Deployment RAG は、チャット・文書の取り込み・Web 画面を別々のサービスとして動かすやり方です。こうすると、チャットと文書の処理がお互いに影響しにくくなります。それぞれを別々に増やしたり直したりできるのがメリットです。</div>
 
-      <p><b>Split Deployment RAG</b> とは、RAG システムの主要責務を単一プロセスに押し込めず、別サービスとして運用する考え方である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では <code>apps/web</code>、<code>apps/chat</code>、<code>apps/job</code>、<code>infra</code> がこの分離を担い、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> や <a href="env-contract-management.html">環境変数コントラクト管理</a> もその前提の上に組み立てられている。</p>
+      <p><b>Split Deployment RAG</b> は、RAG（質問に答えるために関連する文書を検索して使う仕組み）を、1つのプログラムにまとめずに別々のサービスとして動かすやり方です。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では、<code>apps/web</code>（画面）、<code>apps/chat</code>（チャットAPI）、<code>apps/job</code>（文書の取り込み）、<code>infra</code>（インフラ）に分かれています。<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> や <a href="env-contract-management.html">環境変数コントラクト管理</a> も、この分け方を前提にしています。</p>
 
       <h2 id="concept">なぜ分離するのか</h2>
-      <p>RAG の実運用では、ユーザーに即時応答を返す経路と、大きなファイルを解析して検索インデックスを更新する経路では、必要な計算資源も失敗の性質も異なる。Project Diana の README と local runbook はこの違いを前提にしており、chat API は request/response の境界を守り、ingest job は時間のかかる解析処理を非同期実行する。これにより ingest の遅延や OCR 失敗が、そのまま chat サービスの可用性低下に直結しにくくなる。</p>
-      <p>分離のもう一つの利点は権限の局所化である。API 側は job を起動する最小限の権限だけを持ち、文書解析そのものは job 側で完結する。この構造は <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> を API 側に集中させつつ、重い文書処理を別の失敗境界へ逃がすためのものだと言える。</p>
+      <p>「ユーザーにすぐ答えを返す処理」と「大きなファイルを読み取って検索データを作る処理」は、性質がまったく違います。Project Diana では、chat API がユーザーとの会話を担当し、ingest job（文書の取り込みを行う裏方）が時間のかかる処理を受け持ちます。こうしておくと、文書の取り込みが遅れても、チャットは止まりません。</p>
+      <p>もうひとつの良い点は、それぞれに必要な権限だけを与えられることです。API は job を起動する権限だけを持ちます。文書の読み取りは job が行います。<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>（検索にルールを適用する仕組み）は API 側にまとめて、重い処理は job に任せます。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420">
@@ -79,30 +79,30 @@
           <line x1="210" y1="280" x2="520" y2="104" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
           <line x1="270" y1="317" x2="720" y2="220" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
         </svg>
-        <div class="diagram-caption">Split Deployment RAG では、Web UI、API、ingest job を分離し、chat と job が Azure Search / Azure OpenAI を別経路で利用する。</div>
+        <div class="diagram-caption">Web 画面、API、取り込みジョブを別々に動かします。chat と job はそれぞれ Azure Search や Azure OpenAI を使います。</div>
       </div>
 
       <h2 id="boundaries">責務境界</h2>
       <h3 id="web-boundary">Web UI の境界</h3>
-      <p><code>apps/web</code> は Next.js ベースの workspace であり、チャット、ファイル一覧、ingest 状態、trace 表示をユーザーへ見せる。ここは体験面の境界であり、検索や OCR を直接実行せず、API を呼ぶ側に徹する。結果として UI のビルドや画面遷移の変更は、ingest worker の依存関係と独立して進めやすい。</p>
+      <p><code>apps/web</code> は Next.js で作られた画面です。チャット、ファイル一覧、取り込み状況、トレース表示をユーザーに見せます。ここでは検索や OCR を直接実行せず、API を呼ぶだけに徹しています。そのため、画面の変更と取り込み処理の変更を、お互いに影響なく進められます。</p>
 
       <h3 id="chat-boundary">Chat API の境界</h3>
-      <p><code>apps/chat</code> は認証、threads、files、chat、streaming、observability、ingest 起動の窓口を担う。ここで重要なのは、API 自身がすべての文書変換を行うのではなく、必要に応じて job を起動する orchestration layer として振る舞う点である。つまり API はユーザーとの同期境界を守りつつ、バックグラウンド処理の入口になる。</p>
+      <p><code>apps/chat</code> は、認証、スレッド管理、ファイル管理、チャット応答、ストリーミング、監視、取り込みジョブの起動といった窓口を担います。ここで大事なのは、API が自分で文書の変換をすべてやるのではなく、必要なときに job を起動する「まとめ役」として動くことです。つまり API はユーザーとの同期的なやりとりを守りつつ、裏の処理の入口になっています。</p>
 
       <h3 id="job-boundary">Ingest Job の境界</h3>
-      <p><code>apps/job</code> は prepare、parse、OCR、chunk、metadata、index、callback を流す非同期 worker である。CPU、メモリ、外部サービス依存が重くなりやすい処理をこの job 側へ隔離することで、chat API のプロセスを軽く保ちやすい。ここで作られる成果物は <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の記事でさらに細かく追える。</p>
+      <p><code>apps/job</code> は、準備・解析・OCR・分割・メタデータ付与・インデックス登録・コールバック通知を順に行う非同期ワーカーです。CPU やメモリを多く使う重い処理をこの job 側に分けることで、chat API を軽く保てます。ここで作られるデータの詳細は <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の記事で読めます。</p>
 
       <h2 id="deployment">配備にどう落ちるか</h2>
-      <p><code>docker-compose.yml</code> は local-first で、<code>chat</code>、<code>web</code>、<code>job</code> を個別サービスとして定義する。chat と web には health check があり、web は chat の healthy 状態に依存して起動する。job は compose の profile で明示起動されるため、常時動かすべき経路と必要時だけ動かす経路が分かれている。</p>
-      <p><code>infra/main.bicep</code> ではこの分離が Azure 上の実体になる。API は Container App、ingest は manual trigger の Container Apps Job、web は Static Web App として宣言され、API に対しては job スコープに限定した起動権限だけが与えられる。これは <a href="azure-container-apps-topology.html">Azure Container Apps Topology</a> や <a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a> といった派生テーマにそのままつながる。</p>
+      <p><code>docker-compose.yml</code> では、<code>chat</code>、<code>web</code>、<code>job</code> がそれぞれ別のサービスとして書かれています。chat と web にはヘルスチェック（正常に動いているかの確認）があり、web は chat が正常に起動してから立ち上がります。job は compose の profile を使って手動で起動します。つまり、常に動いているサービスと、必要なときだけ動かすサービスが分かれています。</p>
+      <p><code>infra/main.bicep</code> では、この分離が Azure 上の実際のサービスになります。API は Container App、文書取り込みは手動で起動する Container Apps Job、Web 画面は Static Web App として定義されています。API には「job を起動する権限だけ」が与えられています。この構成の詳しい話は <a href="azure-container-apps-topology.html">Azure Container Apps Topology</a> や <a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a> の記事で読めます。</p>
 
       <h2 id="local-dev">ローカル検証フロー</h2>
-      <p>split deployment では、起動前に env をどうそろえるかが重要になる。Project Diana では <code>tools/render_env_profiles.py</code> が各モジュールの <code>.env.example</code> と profile override を束ねて <code>.env.local</code> を生成し、chat/job/web のそれぞれに必要な値を分配する。このため split deployment は単なるコンテナ分割ではなく、<a href="env-contract-management.html">環境変数コントラクト管理</a> と一体で運用されている。</p>
-      <p>ローカルでは <code>docker compose up --build</code> によって chat と web をまとめて立ち上げ、必要に応じて <code>docker compose --profile job run --rm job</code> で ingest を流す。これによりユーザー向け操作と文書投入の検証を別テンポで回せる。</p>
+      <p>サービスを分けて動かすときは、起動前に環境変数をどうそろえるかが大事です。Project Diana では <code>tools/render_env_profiles.py</code> というスクリプトが、各モジュールの <code>.env.example</code> と環境ごとの設定をまとめて <code>.env.local</code> を作ってくれます。chat・job・web それぞれに必要な値を配ってくれるのです。このように、split deployment はただコンテナを分けるだけでなく、<a href="env-contract-management.html">環境変数コントラクト管理</a> とセットで使う仕組みです。</p>
+      <p>ローカルでは <code>docker compose up --build</code> で chat と web をまとめて起動します。文書を取り込みたいときは <code>docker compose --profile job run --rm job</code> で ingest を実行します。こうすることで、ユーザー向けの機能と文書の取り込みを、別々のタイミングで試せます。</p>
 
       <h2 id="tradeoffs">設計上の含意</h2>
-      <p>split deployment は、スケールと可用性の面では有利だが、設定同期、コールバック契約、観測性、ロールアウト順序の管理を強く要求する。Project Diana が runbook、env contract、phase rollout、trace UI を同じ repo に置いているのは、このコストを補うためである。言い換えれば、単にサービスを分けるだけでは不十分で、分けた後の接着面をドキュメントとコードで維持する必要がある。</p>
-      <p>そのため、次に読むべき記事としては <a href="env-contract-management.html">環境変数コントラクト管理</a>、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="workspace-trace-ui.html">Workspace Trace UI</a> が自然である。さらに配備実装の細部として <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> を切り出す余地もある。</p>
+      <p>split deployment は、スケーリングや可用性の面では有利ですが、設定の同期・コールバックの取り決め・監視・デプロイ順序の管理が必要になります。Project Diana が runbook・env contract・段階デプロイ・trace UI を同じリポジトリに置いているのは、この管理コストに対応するためです。つまり、サービスを分けるだけでは不十分で、分けた後のつなぎ目をドキュメントとコードで維持していく必要があります。</p>
+      <p>次に読むと理解が深まる記事としては、<a href="env-contract-management.html">環境変数コントラクト管理</a>、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>、<a href="workspace-trace-ui.html">Workspace Trace UI</a> があります。デプロイの詳細については <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> も参考になります。</p>
     </main>
 
     <aside class="wiki-sidebar">
