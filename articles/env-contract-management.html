@@ -25,13 +25,13 @@
     <main class="wiki-main">
       <h1 class="article-title">環境変数コントラクト管理</h1>
       <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
-      <div class="article-summary">環境変数コントラクト管理は、`env/contract.json` を source of truth として chat/job/web の設定責務を統一する運用モデルである。Project Diana では profile 生成、整合性検証、runtime access convention がこの契約を中心に組まれている。</div>
+      <div class="article-summary">環境変数コントラクト管理とは、<code>env/contract.json</code> という1つのファイルに、chat・job・web の設定情報をまとめて書いておくやり方です。このファイルが「正しい情報のもと」になります。Project Diana では、設定ファイルの作成、設定の正しさチェック、コードでの設定値の読み方まで、すべてこのファイルをもとに決めています。</div>
 
-      <p><b>環境変数コントラクト管理</b> とは、複数モジュールにまたがる env key の意味、所有者、必須性、profile ごとの上書きを単一の契約ファイルで管理する考え方である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では split deployment を支える基盤として <code>env/contract.json</code> が置かれ、<a href="split-deployment-rag.html">Split Deployment RAG</a> を運用可能にする接着層になっている。</p>
+      <p><b>環境変数コントラクト管理</b> は、chat、job、web などのモジュール（機能のまとまり）が使う環境変数（アプリの動作を決める設定値）を、1つの契約ファイルで管理する考え方です。「この設定値は何のためにあるのか」「誰が管理するのか」「必須なのか」「環境ごとにどう変えるのか」を、すべてこのファイルに書きます。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では、<code>env/contract.json</code> がその契約ファイルです。<a href="split-deployment-rag.html">Split Deployment RAG</a>（サービスを分けて動かす構成）をうまく動かすための「つなぎ役」になっています。</p>
 
       <h2 id="source-of-truth">Source of Truth の置き方</h2>
-      <p>ドキュメント <code>docs/env-unified-management.md</code> は、source of truth を三層で説明している。第一に <code>env/contract.json</code> が契約レジストリであり、第二に各 module の env catalog が runtime から参照されるキー定義であり、第三に <code>apps/&lt;module&gt;/.env.example</code> が base template になる。意図された関係は「catalog == base template == contract の rule union」であり、設定ファイルをただ増やすのではなく、三者の一致を維持すること自体が設計目標になっている。</p>
-      <p>この契約では key ごとに <code>owner</code>、<code>domain</code>、説明文が定義され、module 側では <code>required</code>、<code>non_local_required</code>、<code>optional</code>、<code>template</code> で分類される。つまり env の一覧表ではなく、運用ルールと責任分担を持ったメタデータ層として機能している。</p>
+      <p>ドキュメント <code>docs/env-unified-management.md</code> では、「正しい情報のもと（Source of Truth）」を3つに分けて説明しています。1つ目は <code>env/contract.json</code> で、すべての設定値のルールを決めるファイルです。2つ目は各モジュールの env catalog（そのモジュールが使う設定値の一覧）です。3つ目は <code>apps/&lt;module&gt;/.env.example</code> で、設定ファイルのひな型です。大事なのは、この3つの内容がいつも合っていることです。設定ファイルをバラバラに作るのではなく、3つをそろえておくことがこの設計の目的です。</p>
+      <p>契約ファイルには、環境変数ごとに <code>owner</code>（誰が管理するか）、<code>domain</code>（どの分野か）、説明文が書いてあります。モジュール側では、各設定値を <code>required</code>（必ず必要）、<code>non_local_required</code>（ローカル以外で必要）、<code>optional</code>（あってもなくてもよい）、<code>template</code>（ひな型の値）に分けています。こうすることで、「誰が何を管理するか」がはっきりわかるようになっています。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 430" width="920" height="430">
@@ -72,30 +72,30 @@
           <line x1="730" y1="226" x2="410" y2="300" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
           <line x1="470" y1="338" x2="520" y2="338" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
         </svg>
-        <div class="diagram-caption">env contract は catalog と template と profile override を束ね、生成済み `.env.&lt;profile&gt;` を通して runtime process environment をそろえる。</div>
+        <div class="diagram-caption">env contract（契約ファイル）が catalog、template、profile override の情報をまとめます。そこから <code>.env.&lt;profile&gt;</code> が生成され、各サービスが同じ設定で動けるようになります。</div>
       </div>
 
       <h2 id="contract-shape">契約ファイルの構造</h2>
       <h3 id="key-metadata">Key metadata</h3>
-      <p><code>env/contract.json</code> の <code>keys</code> セクションには、個々の env key の説明が日本語で書かれている。ここでの説明は placeholder を禁じられており、単にキー名を繰り返すのではなく用途を説明しなければならない。これは運用者が設定値の意味を誤読しないための guard であり、設定ファイルの自己文書化を強制している。</p>
+      <p><code>env/contract.json</code> の <code>keys</code> セクションには、それぞれの環境変数の説明が日本語で書いてあります。説明文にはキー名をそのまま繰り返すだけではなく、「この値は何に使うのか」を書く決まりです。こうしておくと、設定ファイルを読むだけで意味がわかるので、設定ミスを防ぎやすくなります。</p>
 
       <h3 id="module-rules">Module rules</h3>
-      <p><code>rules</code> では module ごとに required / non-local-required / optional / template を分ける。たとえば chat は <code>JWT_SECRET</code> や <code>INGEST_WEBHOOK_SECRET</code> を扱い、web は公開可能な <code>NEXT_PUBLIC_*</code> 系だけを使う。このルール分離により、どの値がどの実行単位に必要かが明確になる。</p>
+      <p><code>rules</code> セクションでは、モジュールごとに「必ず必要な値」「ローカル以外で必要な値」「あってもなくてもよい値」「ひな型の値」を分けて書きます。たとえば chat モジュールは <code>JWT_SECRET</code> や <code>INGEST_WEBHOOK_SECRET</code> を使います。web モジュールは公開しても問題ない <code>NEXT_PUBLIC_*</code> の変数だけを使います。こうして分けておくと、「どのサービスにどの設定が必要か」がすぐにわかります。</p>
 
       <h3 id="profile-overrides">Profile overrides</h3>
-      <p><code>profiles.modules.&lt;module&gt;.&lt;profile&gt;</code> には <code>local</code>、<code>dev</code>、<code>stg</code>、<code>prod</code> の上書きが入り、render 時に base template へ流し込まれる。ここで profile override は base template の部分集合でなければならず、未知キーは許されない。この制約は <a href="env-profile-rendering.html">Env Profile Rendering</a> と <a href="env-consistency-checks.html">Env Consistency Checks</a> の基礎になる。</p>
+      <p><code>profiles.modules.&lt;module&gt;.&lt;profile&gt;</code> には、環境ごとに変えたい値が入っています。環境は <code>local</code>（手元の開発用）、<code>dev</code>（開発サーバー）、<code>stg</code>（本番前のテスト用）、<code>prod</code>（本番）の4つです。設定ファイルを作るとき、ひな型の値をこの上書き値に置きかえます。ひな型にないキーを上書きに書くことはできません。このルールが <a href="env-profile-rendering.html">Env Profile Rendering</a> や <a href="env-consistency-checks.html">Env Consistency Checks</a> の仕組みのもとになっています。</p>
 
       <h2 id="rendering">レンダリングと配布</h2>
-      <p><code>tools/render_env_profiles.py</code> は、選択した module と profile に対し、<code>.env.example</code> を読み込み、contract の override を差し込んで <code>.env.&lt;profile&gt;</code> を出力する。処理は単純だが重要で、profile 側が base template に存在しないキーを持つ場合はエラーで止まる。つまり render 処理そのものが drift 検知の第一段階を兼ねている。</p>
-      <p>この生成フローは split deployment で特に効く。chat、job、web が別々に起動される以上、手作業コピーで env を配るとすぐに齟齬が出る。render スクリプトを経由させることで、全モジュールが同じ契約に従って設定される。</p>
+      <p><code>tools/render_env_profiles.py</code> は、モジュールと環境を指定して実行するスクリプトです。<code>.env.example</code>（ひな型）に契約ファイルの上書き値を当てはめて、<code>.env.&lt;profile&gt;</code> を出力します。もしひな型にないキーが上書き値に含まれていたら、エラーで止まります。つまり、設定ファイルを作る時点で「設定のずれ」に気づけます。</p>
+      <p>この仕組みは、サービスを分けて動かす構成で特に役立ちます。chat、job、web がそれぞれ別々に起動するため、手作業で設定ファイルをコピーするとすぐに食い違いが起きます。この生成スクリプトを使えば、すべてのモジュールが同じルールに沿った設定ファイルを持てます。</p>
 
       <h2 id="validation">整合性検証</h2>
-      <p><code>tools/check_env_consistency.py</code> は、contract、catalog、base template、profile override の一致を検証する。domain index が metadata と一致するか、各 profile が <code>APP_ENV</code> または <code>NEXT_PUBLIC_APP_ENV</code> を正しく設定しているか、required key に空値が残っていないかまで確認する。このスクリプトがあることで、設定ミスはデプロイ後ではなく CI や local check で発見される。</p>
-      <p>README と docs はさらに <code>make env-check</code>、<code>python tools/check_env_convention.py</code>、<code>python tools/check_env_consistency.py</code> をセットで回すよう案内している。したがって env contract は「読むだけの仕様書」ではなく、コマンドで実際に強制される契約である。</p>
+      <p><code>tools/check_env_consistency.py</code> は、契約ファイル、catalog、ひな型、上書き値がちゃんと合っているかを調べるスクリプトです。たとえば、分野の分類が正しいか、各環境で <code>APP_ENV</code> や <code>NEXT_PUBLIC_APP_ENV</code> が正しいか、必ず必要な値が空のままになっていないか、などを確認します。このスクリプトがあるので、設定ミスは本番にデプロイする前に見つけられます。</p>
+      <p>README やドキュメントでは、<code>make env-check</code>、<code>python tools/check_env_convention.py</code>、<code>python tools/check_env_consistency.py</code> をセットで実行するように書かれています。つまり env contract は「読むだけの書類」ではなく、コマンドで実際にチェックできる「生きたルール」です。</p>
 
       <h2 id="access-pattern">実装上の access convention</h2>
-      <p>Project Diana では Python サービスが business module から直接 <code>os.getenv()</code> を呼ぶことを避け、module env alias を介して読む。web 側でも <code>process.env</code> の直接参照を限定している。これは値の取得地点を統一し、後からキーの棚卸しやテスト override をしやすくするための設計である。</p>
-      <p>この lazy read 方針は、import 時に env が確定していなくてもテストを壊しにくい。したがって env contract 管理は deployment だけの話ではなく、実装スタイルそのものにも影響している。さらに掘るなら <a href="module-env-catalogs.html">Module Env Catalogs</a> や <a href="lazy-env-access-pattern.html">Lazy Env Access Pattern</a> が派生記事になる。</p>
+      <p>Project Diana では、Python のコードから直接 <code>os.getenv()</code> を呼ぶのではなく、モジュール専用の窓口（env alias）を通して設定値を取り出します。web 側でも <code>process.env</code> を直接使う場所を決めています。こうすると、設定値を読む場所が1か所にまとまるので、あとからキーの確認やテスト用の値の入れ替えがしやすくなります。</p>
+      <p>もう1つよい点があります。「使うときに初めて読む（lazy read）」方針なので、テストのときに環境変数がまだ決まっていなくても問題が起きにくいのです。このように、env contract の管理はデプロイだけでなく、コードの書き方にも関わっています。もっと詳しく知りたい場合は、<a href="module-env-catalogs.html">Module Env Catalogs</a> や <a href="lazy-env-access-pattern.html">Lazy Env Access Pattern</a> をご覧ください。</p>
     </main>
 
     <aside class="wiki-sidebar">

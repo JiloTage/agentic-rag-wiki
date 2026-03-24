@@ -25,12 +25,12 @@
     <main class="wiki-main">
       <h1 class="article-title">ドキュメント Ingest Pipeline</h1>
       <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
-      <div class="article-summary">ドキュメント Ingest Pipeline は、validate から callback までを段階分割した非同期処理系である。Project Diana の job サービスでは prepare、parse、picture OCR、chunk、metadata、index を明示的に分離し、失敗コードと callback で API 境界に返している。</div>
+      <div class="article-summary">ドキュメント Ingest Pipeline（文書取り込みパイプライン）は、アップロードされた文書を検索できるデータに変える処理の流れです。validate（検証）から callback（結果通知）まで、いくつかのステップに分かれています。Project Diana の job サービスでは、prepare、parse、picture OCR、chunk、metadata、index の各ステップを分けて実行し、結果や失敗の情報を API に返します。</div>
 
-      <p><b>ドキュメント Ingest Pipeline</b> は、アップロード済み文書を検索可能な知識へ変換する一連の処理である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では <code>apps/job/job_src/entrypoint.py</code> が pipeline の骨格を持ち、<a href="split-deployment-rag.html">Split Deployment RAG</a> の worker 側責務として切り出されている。</p>
+      <p><b>ドキュメント Ingest Pipeline</b> は、アップロードされた文書を、あとから検索できるデータに変える処理のことです。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では、<code>apps/job/job_src/entrypoint.py</code> がこの処理の中心になっています。<a href="split-deployment-rag.html">Split Deployment RAG</a>（サービスを分けて動かす構成）では、worker（裏方の処理役）の仕事として切り出されています。</p>
 
       <h2 id="flow">パイプラインの全体像</h2>
-      <p>entrypoint の主経路は validate、prepare、parse、picture OCR、chunk、metadata、index、callback の順に進む。特に chunk と metadata は並列に実行され、最後に index 書き込みと callback 通知へ合流する。これは ingest を単なる PDF 解析ではなく、構造化済み検索素材を作る処理と見なしていることを示している。</p>
+      <p>処理は validate、prepare、parse、picture OCR、chunk、metadata、index、callback の順に進みます。chunk（文書を小さく区切る処理）と metadata（分類やキーワードの抽出）は同時に実行されます。最後に index（検索インデックスへの書き込み）と callback（結果の通知）が行われます。つまり、この処理は単に PDF を読むだけではなく、「あとから検索しやすいデータ」を作ることが目的です。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 320" width="980" height="320">
@@ -73,30 +73,30 @@
           <line x1="740" y1="204" x2="790" y2="139" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
           <line x1="900" y1="139" x2="920" y2="139" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
         </svg>
-        <div class="diagram-caption">ingest job は validate から callback までを段階化し、chunk と metadata を並列に流す。</div>
+        <div class="diagram-caption">ingest job は validate から callback まで順番に処理を進めます。chunk と metadata は同時に実行されます。</div>
       </div>
 
       <h2 id="prepare-stage">Prepare stage</h2>
-      <p><code>job_src.prepare</code> はダウンロード、拡張子ベースの format 判定、legacy Office 変換、事前 guard を担当する。サイズ制限、暗号化 PDF / Office 検知、ページ数上限、blob URL policy がここで先に評価され、以降の Docling 処理へ壊れた入力を持ち込まない。つまり prepare は parser の前段にある保安層である。</p>
-      <p>legacy Office 形式は LibreOffice headless で近代形式へ変換し、失敗時は PDF への fallback も持つ。ここでのエラーは <code>prepare_unsupported_format</code> や <code>prepare_page_limit_exceeded</code> などのコードで分類され、後段が generic 例外に埋もれないようになっている。</p>
+      <p><code>job_src.prepare</code> は、ファイルのダウンロード、ファイル形式の判定、古い Office 形式の変換、事前チェックを行います。ファイルサイズの上限チェック、暗号化された PDF や Office ファイルの検出、ページ数の上限チェック、blob URL のルール確認がここで行われます。問題のあるファイルは、この段階で止められます。つまり prepare は、次の処理に壊れたデータを渡さないための「門番」です。</p>
+      <p>古い Office 形式のファイルは、LibreOffice を使って新しい形式に変換します。変換できなかった場合は PDF に変換しようとします。ここで起きたエラーには <code>prepare_unsupported_format</code> や <code>prepare_page_limit_exceeded</code> などの名前がつけられるので、あとから原因を調べやすくなっています。</p>
 
       <h2 id="parse-stage">Parse と OCR fallback</h2>
-      <p><code>job_src.parsing</code> は Docling の converter を組み立て、PDF / 画像では Azure Document Intelligence を使う OCR plugin を選択できる。<code>parse_mode=auto</code> の場合はまず fast parse を試し、テキスト品質が閾値を満たさないときだけ OCR へ落ちる。これはコストと速度を抑えながら、必要なときだけ精度を取りに行く戦略である。</p>
-      <p>さらに fast parse が十分な場合でも、画像内テキスト抽出に必要なら OCR snapshot だけを追加で取得する。つまり parse は単純な二択ではなく、本文品質と picture OCR の双方を見ながら最小限の OCR を行う。ここは <a href="picture-ocr-stage.html">Picture OCR Stage</a> や <a href="parse-mode-fallback.html">Parse Mode Fallback</a> として切り出せる。</p>
+      <p><code>job_src.parsing</code> は、Docling というライブラリを使って文書の中身を読み取ります。PDF や画像の場合は、Azure Document Intelligence の OCR（画像からテキストを読み取る機能）を使うこともできます。<code>parse_mode=auto</code> に設定すると、まず高速な方法で読み取りを試みます。テキストの品質が十分でないときだけ、OCR を使います。こうすることで、コストと時間をおさえながら、必要なときだけ精度の高い読み取りができます。</p>
+      <p>高速な読み取りで本文が十分に取れた場合でも、画像の中にあるテキストが必要なら、画像部分だけ OCR を追加で行います。つまり parse は「高速か OCR か」の二択ではなく、本文と画像の両方を見ながら、最小限の OCR で済ませる仕組みです。詳しくは <a href="picture-ocr-stage.html">Picture OCR Stage</a> や <a href="parse-mode-fallback.html">Parse Mode Fallback</a> をご覧ください。</p>
 
       <h2 id="enrichment-stage">Chunk・Metadata・Index</h2>
       <h3 id="chunk-stage">Chunk stage</h3>
-      <p><code>job_src.chunking</code> は Docling HybridChunker を使い、構造を考慮した chunk を作る。出力は生テキストだけではなく、検索用要約 <code>search_text</code>、拡張文脈 <code>context_full</code>、見出しチェーン、chunk keywords、picture OCR 由来の局所テキストまで含む。これは検索インデックスを「単なる分割結果」ではなく、後段の retrieval に最適化された素材として作ることを意味する。</p>
+      <p><code>job_src.chunking</code> は、Docling HybridChunker を使って、文書の構造（見出しや段落など）を考えながら小さなかたまり（chunk）に分けます。出力にはただのテキストだけでなく、検索用の要約 <code>search_text</code>、前後の文脈を含む <code>context_full</code>、見出しの階層、キーワード、画像から読み取ったテキストなども含まれます。こうすることで、あとから検索するときに見つけやすいデータになります。</p>
 
       <h3 id="metadata-stage">Metadata stage</h3>
-      <p>metadata 生成では本文と picture OCR の内容をまとめた analysis input を使い、カテゴリやキーワードや task intent を抽出する。失敗時は degrade 可能なエラーを warning として扱い、document metadata を空配列で返して ingest 全体を止めない。これは解析補助と必須パスを分ける設計である。</p>
+      <p>metadata の生成では、本文と画像から読み取ったテキストをまとめて分析し、カテゴリ、キーワード、文書の目的（task intent）などを取り出します。もしこの処理が失敗しても、警告を出すだけで全体の処理は止めません。metadata が取れなかった場合は空のデータを返します。こうすることで、「あると便利だが必須ではない処理」と「絶対に必要な処理」を分けています。</p>
 
       <h3 id="index-stage">Index stage</h3>
-      <p>最後に enriched chunk 群が Azure Search へ書き込まれる。つまり ingest pipeline の本質は「元文書を保存すること」ではなく、「retrieval が使いやすい形へ再構成すること」にある。ゆえに <a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> はこの pipeline の核心候補になる。</p>
+      <p>最後に、情報を追加した chunk を Azure Search（検索サービス）に書き込みます。つまり、この処理の目的は「元の文書をそのまま保存すること」ではなく、「あとから検索しやすい形に作り変えること」です。そのため、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a>（構造を考えた分割のやり方）がこの処理の中で特に重要な部分です。</p>
 
       <h2 id="callback-stage">Callback と failure model</h2>
-      <p>ingest job は成功でも失敗でも callback payload を準備し、API 側へ結果を返す。失敗時には <code>error_code</code> と detail が付与され、stage も記録される。これにより API は非同期処理の詳細を直接抱え込まずに済み、ユーザー向けには状態遷移だけを表示しつつ、運用者は詳細コードを追える。</p>
-      <p>この callback 契約は split deployment の要所であり、job と API が疎結合であるための条件でもある。さらに UI 側では trace や ingest panel へつながるため、<a href="workspace-trace-ui.html">Workspace Trace UI</a> とも接続して理解すると全体像が見えやすい。</p>
+      <p>ingest job は、成功しても失敗しても、結果を callback（結果通知）として API に返します。失敗したときには <code>error_code</code>（エラーの種類）と詳細情報がつき、どのステップで失敗したかも記録されます。こうすると、API 側は処理の細かい内容を知らなくても、ユーザーに「処理中」「完了」「失敗」などの状態だけを見せられます。運用する人は、エラーコードを見て原因を調べられます。</p>
+      <p>この callback の仕組みは、サービスを分けて動かす構成で特に大事です。job と API がゆるくつながっている（お互いの中身を知らなくてよい）ための条件でもあります。また UI 側では、処理の履歴や取り込み画面に表示されるため、<a href="workspace-trace-ui.html">Workspace Trace UI</a> もあわせて見ると全体の流れがわかりやすくなります。</p>
     </main>
 
     <aside class="wiki-sidebar">

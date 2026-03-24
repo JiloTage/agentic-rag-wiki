@@ -25,13 +25,13 @@
     <main class="wiki-main">
       <h1 class="article-title">Docling Hybrid Chunking</h1>
       <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
-      <div class="article-summary">Docling Hybrid Chunking は、Project Diana の ingest job が文書を retrieval 向けの構造化チャンクへ変換する中心処理である。単純な固定長分割ではなく、見出し、context_full、検索要約、picture OCR 由来テキストを束ねた enriched chunk を作る。</div>
+      <div class="article-summary">Docling Hybrid Chunking は、文書を検索しやすい「かたまり（チャンク）」に分ける仕組みです。ただ同じ長さで切るのではなく、見出し・要約・画像のテキストなどを活かして、検索に役立つ情報がついたチャンクを作ります。</div>
 
-      <p><b>Docling Hybrid Chunking</b> は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の chunk stage に相当する実装であり、<code>job_src.chunking</code> を中心に組み立てられている。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> 全体では、この stage が生文書を <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> で使いやすい証拠へ変換する橋渡しになる。</p>
+      <p><b>Docling Hybrid Chunking</b> は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の中で、文書をチャンク（小さなかたまり）に分ける役割を持っています。コードでは <code>job_src.chunking</code> が中心です。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の中で、もとの文書を <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a>（ルールに従って検索する仕組み）で使いやすい形に変えます。</p>
 
       <h2 id="role">なぜ Hybrid Chunking なのか</h2>
-      <p>この実装が目指しているのは、文書をただ短く刻むことではない。検索時に使う短い要約、回答時に使う広めの文脈、見出しチェーン、chunk keywords、picture OCR で補われた断片までまとめて 1 つの retrieval 単位にすることが目的である。したがって chunking は前処理ではあるが、実際には検索品質を左右するモデル化工程である。</p>
-      <p>固定トークンの sliding window であれば実装は簡単だが、見出し境界や table のまとまりを壊しやすい。Project Diana は Docling の HybridChunker を基盤にし、構造を優先しながら後段で oversize split を補助する方針を採る。これは <a href="split-deployment-rag.html">Split Deployment RAG</a> の job 側で、計算コストを払ってでも retrieval 素材を整える選択だと言える。</p>
+      <p>この仕組みのねらいは、文書をただ短く切ることではありません。検索用の短い要約、回答を作るための広めの文脈、見出しの並び、キーワード、画像から読み取ったテキストなどをまとめて、ひとつの検索単位にすることです。チャンク分割は地味な作業に見えますが、検索の質を大きく左右します。</p>
+      <p>同じトークン数でずらしながら切る方法（sliding window）は簡単ですが、見出しの区切りや表のまとまりを壊しやすいです。Project Diana では Docling の HybridChunker を使い、文書の構造に合わせて分割します。大きすぎるチャンクは後から追加で分けます。これは <a href="split-deployment-rag.html">Split Deployment RAG</a> の考え方で、手間をかけてでも検索素材の質を上げるやり方です。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" width="960" height="360">
@@ -71,27 +71,27 @@
           <line x1="695" y1="94" x2="770" y2="145" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
           <line x1="695" y1="254" x2="770" y2="203" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
         </svg>
-        <div class="diagram-caption">Docling Hybrid Chunking は、見出し補完、HybridChunker、OCR 割当、oversize split を経て enriched chunk を生成する。</div>
+        <div class="diagram-caption">Docling Hybrid Chunking の流れ: まず見出しがなければ補い、HybridChunker で分割します。次に画像テキスト(OCR)を割り当て、大きすぎるチャンクをさらに分けて、情報つきチャンクが完成します。</div>
       </div>
 
       <h2 id="structure">構造情報をどう保持するか</h2>
-      <p>実装はまず、見出しが存在しない文書に synthetic root heading を挿入する。これにより見出しベースの文脈抽出が常に成立しやすくなる。続いて HybridChunker が文書構造を使って raw chunk を作り、後段では <code>search_headings</code> として見出しチェーンを保つ。</p>
-      <p>この設計の狙いは、回答生成で引用を組み立てる際に section 文脈を失わないことにある。特に <a href="context-full-construction.html">Context Full Construction</a> のような派生テーマで重要になるが、chunk の短い本文だけではなく、その周囲の節構造を追跡できることが retrieval の品質を安定させる。</p>
+      <p>まず、見出しがない文書には自動で仮の見出しをつけます。こうしておくと、見出しをもとにした文脈の取り出しがいつでもうまく動きます。次に HybridChunker が文書の構造に沿ってチャンクを作り、見出しの階層を <code>search_headings</code> として保存します。</p>
+      <p>こうする理由は、回答を作るときに「この文章はどの節の中にあるか」という情報をなくさないためです。<a href="context-full-construction.html">Context Full Construction</a> で詳しく説明していますが、チャンクの短い本文だけでなく、まわりの節構造もたどれるようにしておくことで、検索結果の質が安定します。</p>
 
       <h2 id="enrichment">検索用の enrichment</h2>
-      <p>この chunk stage は raw text を返して終わらない。OpenAI を用いた要約生成により <code>search_text</code> を作り、chunk keywords も併せて抽出する。つまり chunk は「文書の断片」ではなく「検索システムに渡すための説明付き断片」へ変換される。</p>
-      <p>また <code>context_full</code> は Markdown export を元に heading boundary まで前後を拡張し、必要なら sentence boundary で切り詰める。これは全文を突っ込むのでも、断片だけに頼るのでもなく、回答生成に使うちょうど中間の粒度を作る工夫である。ここから <a href="search-summary-enrichment.html">Search Summary Enrichment</a> や <a href="context-full-construction.html">Context Full Construction</a> を掘る余地がある。</p>
+      <p>チャンク処理では、もとのテキストをそのまま返すだけでは終わりません。OpenAI を使って要約を作り、<code>search_text</code> として保存します。同時にキーワードも取り出します。つまり、チャンクはただの「文書の切れはし」ではなく、「検索に必要な説明がついた切れはし」になります。</p>
+      <p><code>context_full</code> は、Markdown に変換した文書から見出しの境界まで前後を広げて取り出したものです。長すぎる場合は文の区切りで短くします。全文をそのまま渡すのでもなく、短い断片だけに頼るのでもなく、回答を作るのにちょうどよい長さの文脈を用意する工夫です。詳しくは <a href="search-summary-enrichment.html">Search Summary Enrichment</a> や <a href="context-full-construction.html">Context Full Construction</a> をご覧ください。</p>
 
       <h2 id="ocr">Picture OCR との結合</h2>
-      <p>chunking 実装は <a href="picture-ocr-stage.html">Picture OCR Stage</a> の結果を chunk-local に割り当てる。重要なのは、OCR テキストを文書全体へ均等にばらまくのではなく、doc item id、ref、page などを手がかりに「この画像はどの chunk に属するか」を推定している点である。これにより図表や埋め込み画像のラベルが、関係の薄い chunk へ汚染的に混ざりにくい。</p>
-      <p>また oversize split が入る場合でも、chunk-level OCR を先頭の派生 chunk にだけ残す設計になっている。これは OCR テキストの重複によって検索ランキングが歪むのを避けるための処理であり、検索素材のノイズ制御として合理的である。</p>
+      <p>チャンク処理では、<a href="picture-ocr-stage.html">Picture OCR Stage</a>（画像からテキストを読み取る処理）の結果を、関係するチャンクにひもづけます。ここで大事なのは、OCR テキストを文書全体にばらまくのではなく、画像の ID やページ番号を手がかりにして「この画像はどのチャンクのものか」を判定していることです。こうすると、関係のないチャンクに画像のテキストが混ざりにくくなります。</p>
+      <p>大きすぎるチャンクを追加で分けた場合も、OCR テキストは最初の分割チャンクにだけ入れます。こうすることで、同じ OCR テキストが複数のチャンクに重複して入って検索順位がおかしくなるのを防いでいます。</p>
 
       <h2 id="fallbacks">Oversize split と fallback</h2>
-      <p>構造優先の chunking だけでは、巨大な table や長文 section に対処しきれない。そこで実装は token 閾値を超えた chunk を検出し、table なら header を保ちながら行単位で、通常テキストなら sentence boundary で分割する。これが <a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a> に対応する部分である。</p>
-      <p>さらに parse 前段では <a href="parse-mode-fallback.html">Parse Mode Fallback</a> があり、fast parse と OCR parse の切り替えが起こる。つまり chunk stage 単体ではなく、parse mode と OCR quality の選択が前提条件になっている。</p>
+      <p>構造に合わせて分割するだけでは、とても大きな表や長い節には対応しきれません。そこで、トークン数の上限を超えたチャンクを見つけたら、追加で分割します。表の場合はヘッダー行を残しつつ行単位で分け、ふつうのテキストなら文の区切りで分けます。詳しくは <a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a> をご覧ください。</p>
+      <p>また、チャンク処理の前の段階には <a href="parse-mode-fallback.html">Parse Mode Fallback</a> があります。これは高速パースと OCR パースを切り替える仕組みです。つまり、チャンクの出来はチャンク処理だけでなく、パース方法や OCR の品質にも左右されます。</p>
 
       <h2 id="implications">Retrieval への含意</h2>
-      <p>最終的にこの stage の成果物は、検索時に候補 evidence として扱われ、回答時に引用可能な reference へ再利用される。したがって chunk quality は単に recall の問題ではなく、引用の自然さ、回答の groundedness、ランキングの安定性に直結する。ここで作られた enriched chunk が <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の入力になるため、chunking と retrieval は別工程でも密接に結び付いている。</p>
+      <p>ここで作られたチャンクは、検索のときに回答の根拠候補として使われます。また、回答の中で引用としても再利用されます。そのため、チャンクの質は検索の網羅性だけでなく、引用の自然さや回答の正確さにも直接つながります。ここで作った情報つきチャンクが <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の入力になるので、チャンク分割と検索は別の工程ですが、とても密接に関係しています。</p>
     </main>
 
     <aside class="wiki-sidebar">

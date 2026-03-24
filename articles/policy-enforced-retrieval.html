@@ -25,13 +25,13 @@
     <main class="wiki-main">
       <h1 class="article-title">Policy-Enforced Retrieval</h1>
       <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
-      <div class="article-summary">Policy-Enforced Retrieval は、Project Diana の chat 経路で mandatory filter と validated optional hint を組み合わせて retrieval を制御する設計である。モデル提案は検索範囲を狭められても広げられず、round policy と budget がその上で動く。</div>
+      <div class="article-summary">Policy-Enforced Retrieval は、「検索できる範囲」をルールで制御する仕組みです。必ず適用されるフィルターと、AIモデルが提案するヒントを組み合わせて使います。モデルは検索範囲を狭めることはできますが、広げることはできません。検索の回数や使えるリソースの量もルールで管理されます。</div>
 
-      <p><b>Policy-Enforced Retrieval</b> は、<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の chat サービスが採る retrieval 制御モデルである。<code>ResponsesOrchestrator</code>、<code>PolicyEngine</code>、<code>ToolRoundExecutor</code>、<code>round_policy</code> が連携し、<a href="split-deployment-rag.html">Split Deployment RAG</a> の API 側で検索経路を統制する。</p>
+      <p><b>Policy-Enforced Retrieval</b> は、<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> のチャット機能で使われている検索制御の仕組みです。<code>ResponsesOrchestrator</code>、<code>PolicyEngine</code>、<code>ToolRoundExecutor</code>、<code>round_policy</code> といった部品が協力して動きます。<a href="split-deployment-rag.html">Split Deployment RAG</a> の API 側で、検索の流れをコントロールしています。</p>
 
       <h2 id="invariant">中心不変条件</h2>
-      <p><code>policy.py</code> の docstring は、この設計の核心を明示している。すなわち <code>effective_filter = mandatory_filter AND validated_optional_filter</code> であり、モデル提案は scope を広げず、せいぜい narrow するだけである。trusted request context から導かれる mandatory constraint が土台にあり、model-suggested metadata hint は taxonomy や allowlist を通過したものだけが追加される。</p>
-      <p>これは、検索をモデル任せにしないための境界である。たとえば user_id や category_id のような hard constraint を守らない retrieval は、品質以前に権限や契約の問題を起こす。そのため <a href="env-contract-management.html">環境変数コントラクト管理</a> による設定と、policy engine の実装が一体で機能している。</p>
+      <p><code>policy.py</code> には、この仕組みの一番大事なルールが書かれています。それは <code>effective_filter = mandatory_filter AND validated_optional_filter</code> というものです。つまり、「必ずかかるフィルター」と「チェック済みの追加フィルター」を合わせたものが、実際に使われるフィルターになります。AIモデルが提案するフィルターは、検索範囲を狭めることしかできず、広げることはできません。</p>
+      <p>これは、検索をモデルに丸投げしないための安全策です。たとえば user_id や category_id のような必須の制約を守らない検索は、品質以前に権限や契約の問題につながります。そのため、<a href="env-contract-management.html">環境変数コントラクト管理</a> の設定と policy engine の実装がセットで動くようになっています。</p>
 
       <div class="diagram-container">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 360" width="920" height="360">
@@ -66,27 +66,27 @@
           <line x1="555" y1="107" x2="650" y2="172" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
           <line x1="555" y1="257" x2="650" y2="192" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
         </svg>
-        <div class="diagram-caption">モデル提案は optional filter として narrow できるだけで、mandatory constraint を広げたり外したりはできない。</div>
+        <div class="diagram-caption">AIモデルの提案は optional filter として検索範囲を狭めることだけができます。必須の制約（mandatory constraint）を広げたり外したりすることはできません。</div>
       </div>
 
       <h2 id="request-boundary">リクエスト境界</h2>
-      <p><code>/chat</code> route は、認証済みユーザー、message length、history length、trusted context、thread ownership などを先に検証したうえで <code>_chat_policy_retrieval</code> を呼ぶ。つまり retrieval policy は回答生成の後付けではなく、HTTP 境界のすぐ内側で始まっている。</p>
-      <p>このとき runtime には OpenAI client、Search adapter、PolicyEngine、FilterCompiler、ObservabilityStore などが束ねられており、policy enforcement は route 単体ではなくアプリケーション runtime の一部である。したがって <a href="workspace-trace-ui.html">Workspace Trace UI</a> で見える trace も、この runtime 層の診断情報を反映している。</p>
+      <p><code>/chat</code> のルート（エンドポイント）は、まずユーザーの認証、メッセージの長さ、履歴の長さ、リクエストの信頼情報、スレッドの所有者などを確認します。その確認が終わってから <code>_chat_policy_retrieval</code> を呼び出します。つまり、検索のルール適用は回答を作った後ではなく、リクエストを受け取ったすぐ後から始まっています。</p>
+      <p>このとき、アプリの実行環境には OpenAI クライアント、検索アダプター、PolicyEngine、FilterCompiler、ObservabilityStore などがまとめて入っています。ルールの適用はひとつのルート（エンドポイント）だけの話ではなく、アプリ全体の実行環境の一部です。<a href="workspace-trace-ui.html">Workspace Trace UI</a> で見えるトレース（処理の記録）も、この実行環境の情報を反映しています。</p>
 
       <h2 id="rounds">Round policy と narrowing</h2>
-      <p><code>round_policy.py</code> は retrieval round の遷移を固定している。1 回目は <code>mandatory_broad</code>、2 回目は <code>optional_narrowing</code>、それ以降は <code>optional_relaxed</code> である。しかも out-of-order を禁じる guard があり、いきなり緩和 round へ飛ぶことは許されない。</p>
-      <p>この round 制御の意味は、最初から metadata hint に強く依存しないことにある。初回は mandatory だけで広く取り、2 回目で accepted label / category / intent を使って narrow し、それでも不足するなら later round で緩める。これは <a href="retrieval-round-policy.html">Retrieval Round Policy</a> として独立に読む価値がある。</p>
+      <p><code>round_policy.py</code> は、検索を何回行うか、その順番をどうするかを決めています。1回目は <code>mandatory_broad</code>（必須フィルターだけで広く検索）、2回目は <code>optional_narrowing</code>（追加フィルターで絞り込み）、3回目以降は <code>optional_relaxed</code>（条件をゆるめて検索）です。順番を飛ばすことはできないようになっています。</p>
+      <p>この順番にしている理由は、最初からAIモデルのヒントに頼りすぎないためです。まず必須フィルターだけで広く検索し、次にラベルやカテゴリを使って絞り込み、それでも足りなければ後のラウンドで条件をゆるめます。詳しくは <a href="retrieval-round-policy.html">Retrieval Round Policy</a> をご覧ください。</p>
 
       <h2 id="budgets">Budget と ranking</h2>
-      <p><code>ToolRoundExecutor</code> は round ごとの top-k budget を計算し、planned retrieval call 数に応じて local candidate budget と rerank budget を配分する。ここで <code>optimization_priority</code> が <code>quality</code>、<code>latency</code>、<code>cost</code> のいずれかになり、候補件数と rerank 件数が変わる。つまり retrieval は 1 回ごとに固定コストではなく、明示的な予算消費モデルで動く。</p>
-      <p>また subquestion ごとに Azure score と weight を掛け合わせて ranked evidence を選び直しているため、検索エンジンの返却順をそのまま使っているわけでもない。ここから <a href="retrieval-budgeting.html">Retrieval Budgeting</a> や multi-subquestion ranking を派生テーマとして切り出せる。</p>
+      <p><code>ToolRoundExecutor</code> は、検索の各ラウンドで「何件まで取得するか」という予算を計算します。検索を何回呼ぶかに応じて、候補の数やリランク（並べ替え）の数を配分します。このとき <code>optimization_priority</code> の設定が <code>quality</code>（質を重視）、<code>latency</code>（速さを重視）、<code>cost</code>（コストを重視）のどれかによって、件数が変わります。つまり、検索のたびに使えるリソースが決まっていて、予算のように管理されています。</p>
+      <p>また、質問を分割して検索した場合は、Azure のスコアと重みを掛け合わせて証拠を選び直します。検索エンジンが返した順番をそのまま使うわけではありません。この仕組みについては <a href="retrieval-budgeting.html">Retrieval Budgeting</a> も参考になります。</p>
 
       <h2 id="diagnostics">Diagnostics とリリース運用</h2>
-      <p>Project Diana は policy 設定を docs にも落としており、<code>docs/retrieval-release-verification.md</code> では必須チェックとして env consistency、static analysis、regression test、low-evidence fallback の観測を要求している。特に <code>POLICY_MANDATORY_FIELDS</code> と <code>REQUIRED_FILTERABLE_FIELDS</code> は retrieval contract に直接影響するため、設定変更は release gate の対象になる。</p>
-      <p>さらに live lane event、ranking diagnostics、round diagnostics が整備されているため、retrieval がなぜ narrow されたか、なぜ fallback したかを trace 上で追える。これは <a href="live-retrieval-lanes.html">Live Retrieval Lanes</a> や <a href="taxonomy-driven-metadata-validation.html">Taxonomy-Driven Metadata Validation</a> といった話題に接続する。</p>
+      <p>Project Diana では、ルールの設定をドキュメントにも記録しています。<code>docs/retrieval-release-verification.md</code> には、リリース前に確認すべきことが書かれています。具体的には、環境変数の整合性チェック、コードの静的解析、回帰テスト、証拠が少ないときの動作確認などです。特に <code>POLICY_MANDATORY_FIELDS</code> と <code>REQUIRED_FILTERABLE_FIELDS</code> は検索のルールに直接関わるので、設定を変えるときはリリース前の確認対象になります。</p>
+      <p>さらに、検索中のイベント記録、ランキングの診断、ラウンドの診断が整っています。そのため、「なぜ検索が絞り込まれたのか」「なぜフォールバック（代替手段）が使われたのか」をトレース上で追うことができます。関連する話題として <a href="live-retrieval-lanes.html">Live Retrieval Lanes</a> や <a href="taxonomy-driven-metadata-validation.html">Taxonomy-Driven Metadata Validation</a> があります。</p>
 
       <h2 id="ingest-relation">Ingest 側とのつながり</h2>
-      <p>policy enforcement は chat 側の機能だが、受け取る hint や evidence は <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> に依存している。doc_categories、task_intent、chunk_keywords は ingest 側で生成されるため、policy が narrow できるかどうかは upstream metadata quality に左右される。つまり retrieval policy は chat 単独の話ではなく、ingest と表裏一体である。</p>
+      <p>ルールの適用はチャット側の機能ですが、検索で使うヒントや証拠は <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a>（文書の取り込み処理）が作ったものです。doc_categories、task_intent、chunk_keywords などは取り込み時に生成されます。そのため、検索を絞り込めるかどうかは、取り込み側で作られたメタデータの質に左右されます。つまり、検索のルールはチャット側だけの話ではなく、取り込み処理と表裏一体です。</p>
     </main>
 
     <aside class="wiki-sidebar">
