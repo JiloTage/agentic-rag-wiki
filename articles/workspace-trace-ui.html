@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workspace Trace UI - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Workspace Trace UI
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Workspace Trace UI</h1>
+      <div class="article-meta">最終更新: 2026-03-24 18:45 JST</div>
+      <div class="article-summary">Workspace Trace UI は、Project Diana の Next.js ワークスペース画面に組み込まれたトレース表示機能である。retrieval round の検証ログ、ingest job の進捗、policy enforcement の判断過程をリアルタイムで可視化し、説明責任と運用デバッグを支える。</div>
+
+      <p><b>Workspace Trace UI</b> は、<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の <code>apps/web</code> に実装された、説明責任（アカウンタビリティ）と運用デバッグを担う UI コンポーネント群である。Next.js ワークスペース UI の一部として、<code>TraceModal</code> と <code>WorkspaceShell</code> を中心に構成され、<a href="retrieval-round-policy.html">Retrieval Round Policy</a> の検証ログ、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の進捗状況、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の判断過程をユーザーが直接確認できるようにする。</p>
+
+      <h2 id="role">Trace UI の役割</h2>
+      <p>RAG システムでは「AI がなぜその回答をしたのか」が見えにくいという課題がある。Workspace Trace UI は、この課題に正面から取り組む機能である。具体的には次の 3 つの情報を表示する。</p>
+      <ul>
+        <li><strong>Retrieval ログ</strong>: 各 retrieval round（検索の繰り返し）でどのフィルタが適用され、何件のチャンクが返されたか。<a href="retrieval-round-policy.html">Retrieval Round Policy</a> の mandatory_broad、optional_narrowing、optional_relaxed の各フェーズを時系列で追跡できる。</li>
+        <li><strong>Ingest 進捗</strong>: <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の prepare、parse、<a href="picture-ocr-stage.html">Picture OCR</a>、chunk、metadata、index の各ステージがどこまで進んだか。エラーが起きたステージも赤く表示される。</li>
+        <li><strong>Policy 判断過程</strong>: <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> で mandatory filter（必須フィルタ）がどう構成され、モデルからの optional hint（任意の絞り込み提案）がどう検証されたかの詳細。</li>
+      </ul>
+      <p>これらの情報は、開発者のデバッグだけでなく、管理者が「検索が正しく動いているか」を確認するための監査証跡（オーディットトレイル）としても機能する。</p>
+
+      <h2 id="components">主要コンポーネント</h2>
+      <h3 id="trace-modal">TraceModal</h3>
+      <p><code>TraceModal</code> は、チャット応答に紐づくトレース情報をモーダルウィンドウ（画面の前面に表示される小窓）で表示するコンポーネントである。ユーザーがチャットの回答横にある「トレース」ボタンをクリックすると開く。内部では retrieval round ごとのフィルタ条件、ヒット件数、使用されたチャンクの一覧、policy の判定結果がタイムライン形式で並ぶ。</p>
+      <p>TraceModal が表示するデータは、<code>apps/chat</code> の observability エンドポイントから取得される。<a href="split-deployment-rag.html">Split Deployment RAG</a> の構成では API サーバーが検索処理を担当するため、トレースデータも API 側で生成され、Web UI はそれを読み取って描画するだけという役割分担になっている。</p>
+
+      <h3 id="workspace-shell">WorkspaceShell</h3>
+      <p><code>WorkspaceShell</code> は、ワークスペース全体のレイアウトを管理する大枠コンポーネントである。ChatPanel、FilesPanel、IngestPanel、ThreadPanel、TraceModal をタブやパネルとして束ね、ユーザーがシームレスに切り替えられるようにする。WorkspaceShell のサイドバーには ingest job のリアルタイムステータスバーが常時表示されており、バックグラウンドで動いている文書取り込みの進捗を把握できる。</p>
+
+      <h3 id="ingest-panel">IngestPanel</h3>
+      <p><code>IngestPanel</code> は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> のジョブ一覧と詳細を表示する専用パネルである。各ジョブのステージ進捗をプログレスバーで示し、失敗したステージにはエラーコードと失敗理由が添えられる。<a href="picture-ocr-stage.html">Picture OCR Stage</a> のように部分成功が許容されるステージでは、成功数と失敗数の内訳も確認できる。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" height="480">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <!-- WorkspaceShell 外枠 -->
+          <rect x="30" y="20" width="740" height="440" rx="12" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="400" y="50" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#202122">WorkspaceShell</text>
+
+          <!-- ChatPanel -->
+          <rect x="60" y="70" width="200" height="100" rx="8" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="160" y="100" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">ChatPanel</text>
+          <text x="160" y="120" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">会話 &amp; 回答表示</text>
+          <text x="160" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">引用ソース付き</text>
+
+          <!-- TraceModal -->
+          <rect x="300" y="70" width="200" height="100" rx="8" fill="#fff3e0" stroke="#e67700" stroke-width="2" />
+          <text x="400" y="100" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">TraceModal</text>
+          <text x="400" y="120" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">retrieval round ログ</text>
+          <text x="400" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">policy 判断過程</text>
+
+          <!-- IngestPanel -->
+          <rect x="540" y="70" width="200" height="100" rx="8" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="640" y="100" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">IngestPanel</text>
+          <text x="640" y="120" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">ingest job 一覧</text>
+          <text x="640" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">ステージ進捗</text>
+
+          <!-- Chat からの矢印 -->
+          <line x1="260" y1="120" x2="300" y2="120" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+          <text x="280" y="112" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#54595d">trace</text>
+
+          <!-- API サーバー -->
+          <rect x="220" y="230" width="240" height="90" rx="8" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="340" y="260" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">apps/chat (FastAPI)</text>
+          <text x="340" y="280" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">observability endpoint</text>
+          <text x="340" y="298" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">retrieval trace 生成</text>
+
+          <!-- Ingest Job -->
+          <rect x="520" y="230" width="220" height="90" rx="8" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="630" y="260" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">apps/job (Worker)</text>
+          <text x="630" y="280" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">ingest ステータス callback</text>
+          <text x="630" y="298" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">ステージ進捗通知</text>
+
+          <!-- Policy / Round -->
+          <rect x="220" y="375" width="240" height="70" rx="8" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="340" y="400" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">Policy &amp; Round Engine</text>
+          <text x="340" y="420" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">mandatory filter, hint validation</text>
+
+          <!-- 矢印: TraceModal → API -->
+          <line x1="400" y1="170" x2="370" y2="230" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+          <text x="400" y="200" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#54595d">GET /trace</text>
+
+          <!-- 矢印: IngestPanel → Job -->
+          <line x1="640" y1="170" x2="635" y2="230" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+          <text x="660" y="200" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#54595d">status poll</text>
+
+          <!-- 矢印: API → Policy -->
+          <line x1="340" y1="320" x2="340" y2="375" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+
+          <!-- 矢印: Job → API (callback) -->
+          <line x1="520" y1="275" x2="460" y2="275" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+          <text x="490" y="268" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#54595d">callback</text>
+        </svg>
+        <div class="diagram-caption">Workspace Trace UI のコンポーネント構成図。WorkspaceShell が ChatPanel、TraceModal、IngestPanel を束ね、それぞれが API サーバーや Job ワーカーからトレースデータを取得する。</div>
+      </div>
+
+      <h2 id="trace-data-flow">トレースデータの流れ</h2>
+      <p>トレースデータは、検索処理の実行時にリアルタイムで生成される。具体的な流れは次のとおりである。</p>
+      <ol>
+        <li>ユーザーがチャットで質問を送信すると、<code>apps/chat</code> の chat エンドポイントが <a href="retrieval-round-policy.html">Retrieval Round Policy</a> に従って検索を開始する。</li>
+        <li>各 retrieval round の開始時に、適用されるフィルタ（mandatory filter と accepted hint）、<a href="optimization-priority-modes.html">Optimization Priority Modes</a> に基づく予算配分、検索対象のインデックスがログに記録される。</li>
+        <li>round 完了時に、ヒット件数、スコア分布、選択されたチャンク ID、消費された予算がログに追加される。</li>
+        <li>全 round 終了後、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の最終判定（どの hint が採用され、どれが拒否されたか）がまとめられる。</li>
+        <li>これらのログは observability エンドポイント経由で TraceModal に渡される。</li>
+      </ol>
+      <p>ingest のトレースデータは別の経路をたどる。<code>apps/job</code> がステージごとの進捗を callback（コールバック）で <code>apps/chat</code> に通知し、API サーバーが <a href="azure-container-apps-topology.html">Azure Container Apps</a> の Storage Table に状態を保存する。IngestPanel はこのテーブルをポーリング（定期的に問い合わせ）して画面を更新する。</p>
+
+      <h2 id="retrieval-trace-detail">Retrieval Trace の詳細表示</h2>
+      <p>TraceModal の中でもっとも重要なのは、retrieval trace の詳細表示である。1 回のチャット応答に対して、複数の retrieval round が実行されることがある。各 round は次の情報を持つ。</p>
+      <ul>
+        <li><strong>Round 種別</strong>: mandatory_broad（必須の広い検索）、optional_narrowing（任意の絞り込み検索）、optional_relaxed（任意の緩和検索）のいずれか。</li>
+        <li><strong>フィルタ構成</strong>: mandatory filter のキーと値、モデルが提案した hint のうち採用されたもの、拒否されたもの。</li>
+        <li><strong>検索結果サマリ</strong>: ヒット件数、上位チャンクのスコア、引用に使われたチャンクのハイライト。</li>
+        <li><strong>予算消費</strong>: この round で使われた検索予算と、残りの予算。<a href="optimization-priority-modes.html">Optimization Priority Modes</a> が quality モードか latency モードかによって予算の総量が変わる。</li>
+      </ul>
+      <p>この情報があれば、「なぜこの文書が引用されたのか」「なぜこの文書は見つからなかったのか」を開発者が追跡できる。たとえば、mandatory filter が厳しすぎてヒット 0 件になった場合、round の種別が optional_relaxed に進んだことがトレースからわかる。</p>
+
+      <h3 id="hint-validation-log">Hint Validation ログ</h3>
+      <p>モデルが提案する metadata hint（メタデータによる検索の絞り込み提案）は、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> のルールに従って検証される。TraceModal では、各 hint について「提案値」「検証結果（accept / reject）」「拒否理由」が表形式で表示される。これにより、モデルが不適切な hint を出していないか、あるいは有用な hint が誤って拒否されていないかを確認できる。</p>
+
+      <h2 id="ingest-trace-detail">Ingest Trace の詳細表示</h2>
+      <p>IngestPanel は、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の各ジョブをカード形式で一覧表示する。1 つのジョブカードには次の情報が含まれる。</p>
+      <ul>
+        <li><strong>ファイル名とジョブ ID</strong>: どの文書の取り込みかを識別する。</li>
+        <li><strong>ステージ進捗バー</strong>: prepare、parse、picture_ocr、chunk、metadata、index の 6 ステージを色分けで表示。完了は緑、進行中は青、失敗は赤、待機中はグレー。</li>
+        <li><strong>エラー詳細</strong>: 失敗ステージをクリックすると、エラーコードとスタックトレースの要約が展開される。</li>
+        <li><strong>部分成功の内訳</strong>: <a href="picture-ocr-stage.html">Picture OCR Stage</a> のように複数の画像を処理するステージでは、「10 枚中 8 枚成功、2 枚失敗」のような内訳が表示される。</li>
+      </ul>
+      <p>この画面があることで、文書取り込みが途中で止まったときに「どのステージで何が起きたか」を即座に特定でき、<a href="split-deployment-rag.html">Split Deployment RAG</a> の構成で分離されている job サービスのトラブルシューティングが効率化される。</p>
+
+      <h2 id="design-principles">設計上の方針</h2>
+      <p>Workspace Trace UI の設計には、いくつかの明確な方針がある。</p>
+      <h3 id="read-only-trace">読み取り専用のトレース</h3>
+      <p>TraceModal は情報の表示に特化しており、トレースデータを編集したり、検索のやり直しを指示したりする機能は持たない。これは意図的な設計で、トレースが「事実の記録」であることを保証する。操作ログと監査証跡を同じデータソースから生成できるようにすることで、説明責任を果たしやすくなる。</p>
+
+      <h3 id="progressive-disclosure">段階的な情報開示</h3>
+      <p>最初は round の種別とヒット件数だけを表示し、クリックで詳細を展開する。すべての情報を一度に表示すると、日常的な使い方では情報過多になるためである。開発者向けの詳細（フィルタの具体的な値、チャンク ID、スコアの生値）は 2 段階目以降に配置される。</p>
+
+      <h3 id="api-driven">API 駆動のデータ取得</h3>
+      <p>Web UI はトレースデータの生成に一切関与しない。すべてのトレースデータは <code>apps/chat</code> の API から取得される。この方針は <a href="split-deployment-rag.html">Split Deployment RAG</a> の責務分離と一致しており、Web UI を差し替えても同じトレースデータを利用できる。将来的に <a href="trace-export-api.html">Trace Export API</a> を追加すれば、外部の監視ツールからもアクセス可能になる。</p>
+
+      <h2 id="operational-use-cases">運用での活用シーン</h2>
+      <p>Workspace Trace UI は、次のような場面で活用される。</p>
+      <ul>
+        <li><strong>検索精度の検証</strong>: 新しい文書を取り込んだ後に、期待するチャンクが retrieval で返されるかを確認する。<a href="optimization-priority-modes.html">Optimization Priority Modes</a> を切り替えた際の影響確認にも使える。</li>
+        <li><strong>Ingest エラーの調査</strong>: PDF の取り込みが失敗した場合、IngestPanel で parse ステージの失敗を確認し、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> のログと突き合わせる。</li>
+        <li><strong>Policy 設定の調整</strong>: mandatory filter が厳しすぎて検索結果が返らないケースを TraceModal で発見し、<a href="retrieval-round-policy.html">Retrieval Round Policy</a> のパラメータを調整する根拠にする。</li>
+        <li><strong>監査対応</strong>: 「なぜこの回答がされたか」を第三者に説明する必要がある場合、TraceModal のスクリーンショットやデータエクスポートを証拠として使う。</li>
+        <li><strong>パフォーマンス分析</strong>: 各 round の応答時間を確認し、<a href="trace-latency-breakdown.html">Trace Latency Breakdown</a> の分析に活用する。</li>
+      </ul>
+      <p>今後の拡張としては、トレースデータの <a href="trace-export-api.html">外部エクスポート機能</a>、<a href="trace-diff-comparison.html">2 つのトレースの差分比較</a>、<a href="trace-alert-rules.html">異常検知アラート</a> などが検討されている。これらの機能が実現すれば、Workspace Trace UI は単なるデバッグツールから、RAG の品質管理基盤へと発展する。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#role">Trace UI の役割</a></li>
+          <li><a href="#components">主要コンポーネント</a></li>
+          <li class="toc-h3"><a href="#trace-modal">TraceModal</a></li>
+          <li class="toc-h3"><a href="#workspace-shell">WorkspaceShell</a></li>
+          <li class="toc-h3"><a href="#ingest-panel">IngestPanel</a></li>
+          <li><a href="#trace-data-flow">トレースデータの流れ</a></li>
+          <li><a href="#retrieval-trace-detail">Retrieval Trace の詳細表示</a></li>
+          <li class="toc-h3"><a href="#hint-validation-log">Hint Validation ログ</a></li>
+          <li><a href="#ingest-trace-detail">Ingest Trace の詳細表示</a></li>
+          <li><a href="#design-principles">設計上の方針</a></li>
+          <li class="toc-h3"><a href="#read-only-trace">読み取り専用のトレース</a></li>
+          <li class="toc-h3"><a href="#progressive-disclosure">段階的な情報開示</a></li>
+          <li class="toc-h3"><a href="#api-driven">API 駆動のデータ取得</a></li>
+          <li><a href="#operational-use-cases">運用での活用シーン</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+          <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+          <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+          <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+        <li><a href="optimization-priority-modes.html">Optimization Priority Modes</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="azure-container-apps-topology.html">Azure Container Apps Topology</a></li>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="trace-export-api.html">Trace Export API</a></li>
+        <li><a href="trace-latency-breakdown.html">Trace Latency Breakdown</a></li>
+        <li><a href="trace-diff-comparison.html">Trace Diff Comparison</a></li>
+        <li><a href="trace-alert-rules.html">Trace Alert Rules</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+        <li><a href="optimization-priority-modes.html">Optimization Priority Modes</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

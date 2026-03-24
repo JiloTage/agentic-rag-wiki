@@ -1,14 +1,14 @@
 {
   "last_phase": "phase_2",
-  "last_run": "2026-03-24T18:30:00+09:00",
-  "total_articles": 13,
-  "queue_size": 35,
+  "last_run": "2026-03-24T18:45:00+09:00",
+  "total_articles": 16,
+  "queue_size": 42,
   "max_agents": 3,
   "max_total_articles": 50,
   "expansion_frontier": [
-    "context-full-construction",
-    "picture-ocr-stage",
-    "optimization-priority-modes"
+    "workspace-trace-ui",
+    "search-summary-enrichment",
+    "job-scope-role-assignment"
   ],
   "settings": {
     "max_agents": 3,
@@ -17,5 +17,5 @@
     "language": "ja"
   },
   "created_at": "2026-03-24T17:33:23+09:00",
-  "updated_at": "2026-03-24T18:30:00+09:00"
+  "updated_at": "2026-03-24T18:45:00+09:00"
 }

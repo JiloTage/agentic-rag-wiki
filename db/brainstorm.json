@@ -368,6 +368,69 @@
       "source_id": "search-summary-enrichment",
       "created_at": "2026-03-24T18:45:00+09:00",
       "status": "queued"
+    },
+    {
+      "proposed_slug": "trace-export-api",
+      "proposed_title": "Trace Export API",
+      "rationale": "トレースデータを外部監視ツールや分析基盤へエクスポートする API。",
+      "interestingness_score": 0.82,
+      "source_id": "workspace-trace-ui",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "trace-latency-breakdown",
+      "proposed_title": "Trace Latency Breakdown",
+      "rationale": "各 retrieval round やステージの応答時間を分解して可視化する機能。",
+      "interestingness_score": 0.78,
+      "source_id": "workspace-trace-ui",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "trace-diff-comparison",
+      "proposed_title": "Trace Diff Comparison",
+      "rationale": "同じクエリに対する2回分のトレースを並べて差分を表示する機能。",
+      "interestingness_score": 0.75,
+      "source_id": "workspace-trace-ui",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "trace-alert-rules",
+      "proposed_title": "Trace Alert Rules",
+      "rationale": "トレースデータに基づく異常検知ルール。ヒット0件の頻発やround escalationの急増を通知。",
+      "interestingness_score": 0.73,
+      "source_id": "workspace-trace-ui",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "custom-role-definition-patterns",
+      "proposed_title": "Custom Role Definition Patterns",
+      "rationale": "Contributor の代わりに jobs/start/action だけを許可するカスタムロール定義パターン。",
+      "interestingness_score": 0.82,
+      "source_id": "job-scope-role-assignment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "bicep-idempotent-role-binding",
+      "proposed_title": "Bicep Idempotent Role Binding",
+      "rationale": "guid() による決定的 GUID 生成で roleAssignment の再デプロイ時エラーを回避するパターン。",
+      "interestingness_score": 0.78,
+      "source_id": "job-scope-role-assignment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "role-assignment-audit-trail",
+      "proposed_title": "Role Assignment Audit Trail",
+      "rationale": "Azure Activity Log を活用して roleAssignment の変更履歴を追跡する運用監視。",
+      "interestingness_score": 0.75,
+      "source_id": "job-scope-role-assignment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
     }
   ],
   "history": [
