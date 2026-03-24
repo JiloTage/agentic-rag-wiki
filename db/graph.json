@@ -48,10 +48,59 @@
       "url": "articles/env-profile-rendering.html",
       "summary": "base template と profile override から apps/<module>/.env.<profile> を生成する仕組み。",
       "is_root": false
+    },
+    {
+      "id": "retrieval-round-policy",
+      "title": "Retrieval Round Policy",
+      "url": "articles/retrieval-round-policy.html",
+      "summary": "mandatory_broad から optional_relaxed までの retrieval round 遷移と budget 制御。",
+      "is_root": false
+    },
+    {
+      "id": "azure-container-apps-topology",
+      "title": "Azure Container Apps Topology",
+      "url": "articles/azure-container-apps-topology.html",
+      "summary": "API Container App、manual ingest job、Static Web App、Storage Table 群で構成する Azure 配備。",
+      "is_root": false
+    },
+    {
+      "id": "env-consistency-checks",
+      "title": "Env Consistency Checks",
+      "url": "articles/env-consistency-checks.html",
+      "summary": "contract、catalog、base template、profile override の一致を検証する環境設定チェック。",
+      "is_root": false
     }
   ],
   "links": [
     {
+      "source": "azure-container-apps-topology",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "azure-container-apps-topology",
+      "target": "env-consistency-checks"
+    },
+    {
+      "source": "azure-container-apps-topology",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "azure-container-apps-topology",
+      "target": "env-profile-rendering"
+    },
+    {
+      "source": "azure-container-apps-topology",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "azure-container-apps-topology",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "azure-container-apps-topology",
+      "target": "split-deployment-rag"
+    },
+    {
       "source": "docling-hybrid-chunking",
       "target": "document-ingestion-pipeline"
     },
@@ -73,7 +122,15 @@
     },
     {
       "source": "document-ingestion-pipeline",
+      "target": "azure-container-apps-topology"
+    },
+    {
+      "source": "document-ingestion-pipeline",
       "target": "docling-hybrid-chunking"
+    },
+    {
+      "source": "document-ingestion-pipeline",
+      "target": "env-consistency-checks"
     },
     {
       "source": "document-ingestion-pipeline",
@@ -89,7 +146,47 @@
     },
     {
       "source": "document-ingestion-pipeline",
+      "target": "retrieval-round-policy"
+    },
+    {
+      "source": "document-ingestion-pipeline",
       "target": "split-deployment-rag"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "azure-container-apps-topology"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "env-profile-rendering"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "retrieval-round-policy"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "env-contract-management",
+      "target": "azure-container-apps-topology"
     },
     {
       "source": "env-contract-management",
@@ -98,6 +195,10 @@
     {
       "source": "env-contract-management",
       "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "env-contract-management",
+      "target": "env-consistency-checks"
     },
     {
       "source": "env-contract-management",
@@ -113,7 +214,19 @@
     },
     {
       "source": "env-contract-management",
+      "target": "retrieval-round-policy"
+    },
+    {
+      "source": "env-contract-management",
       "target": "split-deployment-rag"
+    },
+    {
+      "source": "env-profile-rendering",
+      "target": "azure-container-apps-topology"
+    },
+    {
+      "source": "env-profile-rendering",
+      "target": "env-consistency-checks"
     },
     {
       "source": "env-profile-rendering",
@@ -133,11 +246,19 @@
     },
     {
       "source": "policy-enforced-retrieval",
+      "target": "azure-container-apps-topology"
+    },
+    {
+      "source": "policy-enforced-retrieval",
       "target": "docling-hybrid-chunking"
     },
     {
       "source": "policy-enforced-retrieval",
       "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "policy-enforced-retrieval",
+      "target": "env-consistency-checks"
     },
     {
       "source": "policy-enforced-retrieval",
@@ -153,7 +274,15 @@
     },
     {
       "source": "policy-enforced-retrieval",
+      "target": "retrieval-round-policy"
+    },
+    {
+      "source": "policy-enforced-retrieval",
       "target": "split-deployment-rag"
+    },
+    {
+      "source": "project-diana-agentic-rag",
+      "target": "azure-container-apps-topology"
     },
     {
       "source": "project-diana-agentic-rag",
@@ -162,6 +291,10 @@
     {
       "source": "project-diana-agentic-rag",
       "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "project-diana-agentic-rag",
+      "target": "env-consistency-checks"
     },
     {
       "source": "project-diana-agentic-rag",
@@ -177,7 +310,39 @@
     },
     {
       "source": "project-diana-agentic-rag",
+      "target": "retrieval-round-policy"
+    },
+    {
+      "source": "project-diana-agentic-rag",
       "target": "split-deployment-rag"
+    },
+    {
+      "source": "retrieval-round-policy",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "retrieval-round-policy",
+      "target": "env-consistency-checks"
+    },
+    {
+      "source": "retrieval-round-policy",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "retrieval-round-policy",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "retrieval-round-policy",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "retrieval-round-policy",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "azure-container-apps-topology"
     },
     {
       "source": "split-deployment-rag",
@@ -186,6 +351,10 @@
     {
       "source": "split-deployment-rag",
       "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "env-consistency-checks"
     },
     {
       "source": "split-deployment-rag",
@@ -202,6 +371,10 @@
     {
       "source": "split-deployment-rag",
       "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "split-deployment-rag",
+      "target": "retrieval-round-policy"
     }
   ]
 }

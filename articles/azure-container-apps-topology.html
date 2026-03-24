@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Azure Container Apps Topology - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Azure Container Apps Topology
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Azure Container Apps Topology</h1>
+      <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
+      <div class="article-summary">Azure Container Apps Topology は、Project Diana の <code>infra/main.bicep</code> が split deployment を Azure 上の API Container App、manual Container Apps Job、Static Web App、Storage Table 群として具体化する配備構成である。API には ingest job だけを起動する scoped role assignment が与えられる。</div>
+
+      <p><b>Azure Container Apps Topology</b> は、<a href="split-deployment-rag.html">Split Deployment RAG</a> を Azure の実リソースへ落とした構成である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の <code>infra/main.bicep</code> は、API を Container App、ingest を manual trigger の Container Apps Job、UI を Static Web App として分離し、単一プロセス化ではなく役割別配備を明示している。</p>
+
+      <h2 id="map">リソース配置</h2>
+      <p>Bicep はまず managed environment、image、search / OpenAI endpoint、secret 群を受け取り、<code>diana-api-&lt;env&gt;</code>、<code>diana-ingest-&lt;env&gt;</code>、<code>diana-web-&lt;env&gt;</code> を組み立てる。さらに storage account を作成し、<code>ingeststatus</code> と <code>chathistory</code> の table を切るため、API と job の責務分離だけでなく状態格納先も topology の一部として定義される。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <rect x="80" y="45" width="210" height="78" rx="12" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="185" y="76" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">Container App</text>
+          <text x="185" y="98" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#54595d">diana-api-&lt;env&gt; / ingress 8000</text>
+
+          <rect x="380" y="45" width="210" height="78" rx="12" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="485" y="76" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">Container Apps Job</text>
+          <text x="485" y="98" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#54595d">manual ingest / timeout 900s</text>
+
+          <rect x="680" y="45" width="210" height="78" rx="12" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="785" y="76" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#202122">Static Web App</text>
+          <text x="785" y="98" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#54595d">apps/web → .next</text>
+
+          <rect x="170" y="240" width="230" height="88" rx="12" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="285" y="273" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">Storage Tables</text>
+          <text x="285" y="297" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#54595d">ingeststatus / chathistory</text>
+
+          <rect x="505" y="240" width="280" height="88" rx="12" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="645" y="273" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">Shared external services</text>
+          <text x="645" y="297" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#54595d">Azure AI Search / Azure OpenAI / secrets</text>
+
+          <line x1="210" y1="123" x2="255" y2="240" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="450" y1="123" x2="340" y2="240" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="250" y1="123" x2="560" y2="240" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="485" y1="123" x2="645" y2="240" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="785" y1="123" x2="705" y2="240" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+
+          <path d="M 290 84 C 330 84, 340 84, 380 84" fill="none" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <text x="335" y="64" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">job start</text>
+        </svg>
+        <div class="diagram-caption">API、manual ingest job、Static Web App、storage tables を同一テンプレートで束ね、job 起動だけを API に委譲する。</div>
+      </div>
+
+      <h2 id="api">API Container App</h2>
+      <p>API app は external ingress と <code>targetPort: 8000</code> を持ち、1Gi / 0.5 CPU の単位で <code>minReplicas: 1</code>、<code>maxReplicas: 3</code> を取る。secret には Search key、OpenAI key、JWT secret、ingest webhook secret、auth user JSON が入り、runtime env には <code>AZURE_CONTAINERAPPS_JOB_NAME</code> や table 名も注入される。つまり <a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> と ingest 起動 API は、同じ API app の runtime contract 上に載っている。</p>
+
+      <h2 id="job">Manual ingest job</h2>
+      <p>ingest 側は <code>Microsoft.App/jobs</code> として manual trigger で定義され、<code>replicaTimeout: 900</code>、<code>replicaRetryLimit: 1</code>、<code>parallelism: 1</code> を持つ。job container は 2Gi / 1 CPU と API より重く、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> を想定した資源配分になっている。検索や OpenAI の secret は共有するが、JWT secret など API 専用の責務は持たない。</p>
+
+      <h2 id="scope">権限の絞り込み</h2>
+      <p>Bicep は API app の system-assigned identity に対し、subscription ではなく ingest job resource だけを scope とする role assignment を付ける。コメントにもある通り built-in role は Contributor だが、割り当て範囲を job に限定することで、API が持つ権限を「ingest start に必要な最小セット」へ押し込めている。これは <a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a> や <a href="job-scope-role-assignment.html">Job Scope Role Assignment</a> にそのまま接続する。</p>
+
+      <h2 id="parity">ローカルとの対応</h2>
+      <p><code>docker-compose.yml</code> は cloud topology のローカル縮約版である。chat と web は常時サービスとして立ち上がり、web は chat の healthy 状態に依存する。job は <code>profiles: [\"job\"]</code> に入っており、必要時だけ明示起動される。この対比によって <a href="local-docker-compose-profile.html">Local Docker Compose Profile</a> と Azure 配備の mental model が一致する。</p>
+      <p>ただし local と cloud の差分は env 配布で吸収しなければならない。したがって topology の再現性は <a href="env-profile-rendering.html">Env Profile Rendering</a> と <a href="env-consistency-checks.html">Env Consistency Checks</a> に大きく依存する。</p>
+
+      <h2 id="implications">運用上の含意</h2>
+      <p>この topology では API と job が storage table を共有しつつ、UI は Static Web App として別配備になる。そのため rollout の論点は、コードだけでなく status table schema、secret wiring、build output path にも及ぶ。言い換えると split deployment の本体は「サービスを分ける」ことではなく、分けたリソース間の contract を維持することにある。</p>
+      <p>次に掘るべき派生記事としては <a href="storage-backed-status-tables.html">Storage-Backed Status Tables</a> と <a href="static-web-app-build-contract.html">Static Web App Build Contract</a> が自然である。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#map">リソース配置</a></li>
+          <li><a href="#api">API Container App</a></li>
+          <li><a href="#job">Manual ingest job</a></li>
+          <li><a href="#scope">権限の絞り込み</a></li>
+          <li><a href="#parity">ローカルとの対応</a></li>
+          <li><a href="#implications">運用上の含意</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+          <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+          <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+          <li><a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a></li>
+          <li><a href="local-docker-compose-profile.html">Local Docker Compose Profile</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="local-docker-compose-profile.html">Local Docker Compose Profile</a></li>
+        <li><a href="api-job-trigger-boundary.html">API-Job Trigger Boundary</a></li>
+        <li><a href="job-scope-role-assignment.html">Job Scope Role Assignment</a></li>
+        <li><a href="storage-backed-status-tables.html">Storage-Backed Status Tables</a></li>
+        <li><a href="static-web-app-build-contract.html">Static Web App Build Contract</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Env Consistency Checks - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Env Consistency Checks
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Env Consistency Checks</h1>
+      <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
+      <div class="article-summary">Env Consistency Checks は、Project Diana の <code>tools/check_env_consistency.py</code> が <code>env/contract.json</code>、module catalog、<code>.env.example</code>、profile override の一致を検証する仕組みである。requiredness、owner/domain、domain_index、profile ごとの <code>APP_ENV</code> を静的に突き合わせ、設定 drift を CI と local check で止める。</div>
+
+      <p><b>Env Consistency Checks</b> は、<a href="env-contract-management.html">環境変数コントラクト管理</a> を単なる文書ではなく実行可能な契約に変える検証レイヤーである。Project Diana では chat、job、web の三モジュールに対して、catalog、template、contract、profile override を突き合わせ、<a href="split-deployment-rag.html">Split Deployment RAG</a> 全体で設定 drift が広がる前に止める。</p>
+
+      <h2 id="scope">何を照合するか</h2>
+      <p><code>tools/check_env_consistency.py</code> は module を <code>chat</code>、<code>job</code>、<code>web</code> に固定し、profile を <code>local</code>、<code>dev</code>、<code>stg</code>、<code>prod</code> に固定している。照合対象は <code>env/contract.json</code>、各 module の env catalog、<code>apps/&lt;module&gt;/.env.example</code>、profile override であり、意図された関係は「catalog == base template == contract rule union」である。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 360" width="940" height="360">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <rect x="70" y="60" width="220" height="76" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="180" y="90" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">contract</text>
+          <text x="180" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">keys / rules / profiles / domain_index</text>
+
+          <rect x="360" y="60" width="220" height="76" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="470" y="90" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">module catalogs</text>
+          <text x="470" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">chat/env.py, job/env.py, web/env.ts</text>
+
+          <rect x="650" y="60" width="220" height="76" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="760" y="90" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">base templates</text>
+          <text x="760" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">apps/&lt;module&gt;/.env.example</text>
+
+          <rect x="230" y="230" width="220" height="76" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="340" y="260" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">profile overrides</text>
+          <text x="340" y="282" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">local / dev / stg / prod</text>
+
+          <rect x="500" y="230" width="220" height="76" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="610" y="260" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#202122">check result</text>
+          <text x="610" y="282" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">owner, domain, requiredness, APP_ENV</text>
+
+          <line x1="180" y1="136" x2="300" y2="230" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="470" y1="136" x2="380" y2="230" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="760" y1="136" x2="640" y2="230" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="450" y1="268" x2="500" y2="268" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+        </svg>
+        <div class="diagram-caption">contract、catalog、base template、profile override の四点を同時に突き合わせることで、単発のファイル比較では見えない drift を止める。</div>
+      </div>
+
+      <h2 id="contract">contract 側の制約</h2>
+      <p>check script は domain を <code>auth</code>、<code>retrieval</code>、<code>storage</code>、<code>observability</code>、<code>runtime</code> の五つに固定し、<code>domain_index</code> のキー順と内容が metadata の domain assignment と一致することまで確認する。また key description は空欄禁止で、<code>TODO</code> や低情報量の placeholder も reject される。つまり contract には「キーがある」だけでなく「意味が説明されている」ことまで要求される。</p>
+      <p>この層は <a href="domain-index-integrity.html">Domain Index Integrity</a> や <a href="env-owner-domain-rules.html">Env Owner Domain Rules</a> のトピックに分解できる。設定の正しさは値だけでなく、owner と domain のメタデータが成立しているかにも依存するからである。</p>
+
+      <h2 id="alignment">module ごとの整列</h2>
+      <p>各 module について script は「base template にあるキーが catalog にもあるか」「catalog のキーが contract rules に宣言されているか」「runtime contract key の owner が shared または当該 module か」を見る。たとえば web は <code>NEXT_PUBLIC_APP_ENV</code> を使い、chat / job は <code>APP_ENV</code> を使うため、同じ環境概念でも module ごとに見るキーが異なる。</p>
+      <p>この比較により、catalog の更新漏れや template への追記漏れがすぐ分かる。周辺テーマとしては <a href="module-env-catalogs.html">Module Env Catalogs</a> と <a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の job module 側 runtime contract がある。</p>
+
+      <h2 id="profiles">profile ごとの必須性</h2>
+      <p>profile override は base template の部分集合でなければならず、未知キーは即座に invalid になる。また各 profile は chat / job では <code>APP_ENV=&lt;profile&gt;</code>、web では <code>NEXT_PUBLIC_APP_ENV=&lt;profile&gt;</code> を必ず持たなければならない。さらに <code>required</code> は全環境で非空、<code>non_local_required</code> は <code>dev</code> / <code>stg</code> / <code>prod</code> で非空であることがチェックされる。</p>
+      <p>このため render 済み env file の正当性は、生成後ではなく生成前の contract レベルで担保される。ここから <a href="env-profile-rendering.html">Env Profile Rendering</a>、<a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a>、<a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a>、<a href="profile-requiredness-matrix.html">Profile Requiredness Matrix</a> といった派生が生まれる。</p>
+
+      <h2 id="workflow">開発フローへの組み込み</h2>
+      <p><code>docs/env-unified-management.md</code> は、root で <code>python tools/check_env_convention.py</code> と <code>python tools/check_env_consistency.py</code> を回し、必要に応じて <code>make env-check</code> と render を続ける流れを案内している。つまり consistency check は CI だけの道具ではなく、ローカル作業開始前の gate として設計されている。</p>
+      <p>この gate が効く範囲は広い。<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の env key や、<a href="retrieval-round-policy.html">Retrieval Round Policy</a> の optimize priority、さらに <a href="azure-container-apps-topology.html">Azure Container Apps Topology</a> で配る secret / table 名の正しさも、最終的には env contract と consistency check に戻ってくる。</p>
+
+      <h2 id="implications">何を未然に防ぐか</h2>
+      <p>この仕組みが止めるのは、単純な typo だけではない。module owner の取り違え、profile ごとの空値、domain index の未更新、template と catalog の片方だけが変わった状態など、後から発見すると原因追跡が難しい drift を先に表面化させる。split deployment では chat / job / web が別起動単位なので、こうした齟齬が本番で起きると調査コストが急増する。</p>
+      <p>その意味で Env Consistency Checks は、設定ファイル版の static analysis に近い。実際の runtime へ進む前に contract レベルで止めるからこそ、lazy env access や profile rendering が安心して使える。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#scope">何を照合するか</a></li>
+          <li><a href="#contract">contract 側の制約</a></li>
+          <li><a href="#alignment">module ごとの整列</a></li>
+          <li><a href="#profiles">profile ごとの必須性</a></li>
+          <li><a href="#workflow">開発フローへの組み込み</a></li>
+          <li><a href="#implications">何を未然に防ぐか</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+          <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+          <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+          <li><a href="azure-container-apps-topology.html">Azure Container Apps Topology</a></li>
+          <li><a href="module-env-catalogs.html">Module Env Catalogs</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="azure-container-apps-topology.html">Azure Container Apps Topology</a></li>
+        <li><a href="module-env-catalogs.html">Module Env Catalogs</a></li>
+        <li><a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a></li>
+        <li><a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a></li>
+        <li><a href="domain-index-integrity.html">Domain Index Integrity</a></li>
+        <li><a href="profile-requiredness-matrix.html">Profile Requiredness Matrix</a></li>
+        <li><a href="env-owner-domain-rules.html">Env Owner Domain Rules</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="azure-container-apps-topology.html">Azure Container Apps Topology</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

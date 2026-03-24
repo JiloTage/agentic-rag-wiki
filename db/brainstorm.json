@@ -1,33 +1,6 @@
 {
   "queue": [
     {
-      "proposed_slug": "retrieval-round-policy",
-      "proposed_title": "Retrieval Round Policy",
-      "rationale": "max_live_retrieval_rounds と tool round executor の停止条件を切り出すと、policy enforcement の上にある対話制御が見える。",
-      "interestingness_score": 0.88,
-      "source_id": "policy-enforced-retrieval",
-      "created_at": "2026-03-24T17:53:58+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "azure-container-apps-topology",
-      "proposed_title": "Azure Container Apps Topology",
-      "rationale": "Container App と Container Apps Job と Static Web App の分担は split deployment の実装そのものである。",
-      "interestingness_score": 0.87,
-      "source_id": "split-deployment-rag",
-      "created_at": "2026-03-24T17:42:07+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "env-consistency-checks",
-      "proposed_title": "Env Consistency Checks",
-      "rationale": "contract、catalog、template、profile を突き合わせる検証は運用 drift 防止の中心にある。",
-      "interestingness_score": 0.86,
-      "source_id": "env-contract-management",
-      "created_at": "2026-03-24T17:42:07+09:00",
-      "status": "queued"
-    },
-    {
       "proposed_slug": "context-full-construction",
       "proposed_title": "Context Full Construction",
       "rationale": "chunk ごとに context_full を組み立てる処理は要約 text と並ぶ検索品質の核である。",
@@ -43,6 +16,15 @@
       "interestingness_score": 0.85,
       "source_id": "document-ingestion-pipeline",
       "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "optimization-priority-modes",
+      "proposed_title": "Optimization Priority Modes",
+      "rationale": "quality / latency / cost の三つの optimize priority が budget の切り方をどう変えるかは独立に掘る価値がある。",
+      "interestingness_score": 0.85,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:08:07+09:00",
       "status": "queued"
     },
     {
@@ -64,12 +46,39 @@
       "status": "queued"
     },
     {
+      "proposed_slug": "job-scope-role-assignment",
+      "proposed_title": "Job Scope Role Assignment",
+      "rationale": "API identity に job resource スコープだけの権限を与える設計は split deployment の実運用に直結する。",
+      "interestingness_score": 0.84,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "domain-index-integrity",
+      "proposed_title": "Domain Index Integrity",
+      "rationale": "contract の domain_index が key metadata と一致することを強制する設計は env governance の中核である。",
+      "interestingness_score": 0.84,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "queued"
+    },
+    {
       "proposed_slug": "taxonomy-driven-metadata-validation",
       "proposed_title": "Taxonomy-Driven Metadata Validation",
       "rationale": "validated optional hint を taxonomy と metadata schema で正規化する箇所は policy safety の下支えである。",
       "interestingness_score": 0.83,
       "source_id": "policy-enforced-retrieval",
       "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "round-order-violation-guards",
+      "proposed_title": "Round Order Violation Guards",
+      "rationale": "allowed_next による round 遷移制約は retrieval の安全弁として切り出して読む価値がある。",
+      "interestingness_score": 0.83,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:08:07+09:00",
       "status": "queued"
     },
     {
@@ -82,12 +91,30 @@
       "status": "queued"
     },
     {
+      "proposed_slug": "storage-backed-status-tables",
+      "proposed_title": "Storage-Backed Status Tables",
+      "rationale": "ingeststatus と chathistory を storage table として切り出す理由は配備設計の要である。",
+      "interestingness_score": 0.82,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "queued"
+    },
+    {
       "proposed_slug": "retrieval-budgeting",
       "proposed_title": "Retrieval Budgeting",
       "rationale": "retrieved_chunks_budget や extended budget の扱いは回答品質とコストを左右する。",
       "interestingness_score": 0.81,
       "source_id": "policy-enforced-retrieval",
       "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "profile-requiredness-matrix",
+      "proposed_title": "Profile Requiredness Matrix",
+      "rationale": "required と non_local_required が profile ごとにどう効くかは env consistency の理解を深める。",
+      "interestingness_score": 0.81,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:08:07+09:00",
       "status": "queued"
     },
     {
@@ -100,6 +127,15 @@
       "status": "queued"
     },
     {
+      "proposed_slug": "multi-query-budget-splitting",
+      "proposed_title": "Multi-Query Budget Splitting",
+      "rationale": "planned retrieval call 数で per-query budget を割る設計は round policy の実務的な肝である。",
+      "interestingness_score": 0.8,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "queued"
+    },
+    {
       "proposed_slug": "api-job-trigger-boundary",
       "proposed_title": "API-Job Trigger Boundary",
       "rationale": "API が job を起動するだけで解析を抱え込まない境界設計は、責務分離を説明する上で重要である。",
@@ -109,12 +145,30 @@
       "status": "queued"
     },
     {
+      "proposed_slug": "env-owner-domain-rules",
+      "proposed_title": "Env Owner Domain Rules",
+      "rationale": "owner が shared または module 自身であることを検証する規則は env 責務分離の核である。",
+      "interestingness_score": 0.79,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "queued"
+    },
+    {
       "proposed_slug": "chunk-oversize-splitting",
       "proposed_title": "Chunk Oversize Splitting",
       "rationale": "oversize chunk を safety margin 付きで再分割する条件は hybrid chunking の実務的な肝である。",
       "interestingness_score": 0.78,
       "source_id": "docling-hybrid-chunking",
       "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "static-web-app-build-contract",
+      "proposed_title": "Static Web App Build Contract",
+      "rationale": "Static Web App の appLocation と outputLocation を含む build contract は cloud 配備のボトルネックになりやすい。",
+      "interestingness_score": 0.78,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:08:07+09:00",
       "status": "queued"
     },
     {
@@ -232,6 +286,36 @@
       "created_at": "2026-03-24T17:42:07+09:00",
       "status": "created",
       "moved_at": "2026-03-24T17:53:58+09:00"
+    },
+    {
+      "proposed_slug": "retrieval-round-policy",
+      "proposed_title": "Retrieval Round Policy",
+      "rationale": "max_live_retrieval_rounds と tool round executor の停止条件を切り出すと、policy enforcement の上にある対話制御が見える。",
+      "interestingness_score": 0.88,
+      "source_id": "policy-enforced-retrieval",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:08:07+09:00"
+    },
+    {
+      "proposed_slug": "azure-container-apps-topology",
+      "proposed_title": "Azure Container Apps Topology",
+      "rationale": "Container App と Container Apps Job と Static Web App の分担は split deployment の実装そのものである。",
+      "interestingness_score": 0.87,
+      "source_id": "split-deployment-rag",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:08:07+09:00"
+    },
+    {
+      "proposed_slug": "env-consistency-checks",
+      "proposed_title": "Env Consistency Checks",
+      "rationale": "contract、catalog、template、profile を突き合わせる検証は運用 drift 防止の中心にある。",
+      "interestingness_score": 0.86,
+      "source_id": "env-contract-management",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:08:07+09:00"
     }
   ]
 }

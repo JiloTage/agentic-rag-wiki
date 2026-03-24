@@ -24,7 +24,7 @@
   <div class="wiki-content">
     <main class="wiki-main">
       <h1 class="article-title">ドキュメント Ingest Pipeline</h1>
-      <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
+      <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
       <div class="article-summary">ドキュメント Ingest Pipeline は、validate から callback までを段階分割した非同期処理系である。Project Diana の job サービスでは prepare、parse、picture OCR、chunk、metadata、index を明示的に分離し、失敗コードと callback で API 境界に返している。</div>
 
       <p><b>ドキュメント Ingest Pipeline</b> は、アップロード済み文書を検索可能な知識へ変換する一連の処理である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では <code>apps/job/job_src/entrypoint.py</code> が pipeline の骨格を持ち、<a href="split-deployment-rag.html">Split Deployment RAG</a> の worker 側責務として切り出されている。</p>
@@ -148,6 +148,9 @@
         <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
         <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
         <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="azure-container-apps-topology.html">Azure Container Apps Topology</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
       </ul>
     </div>
     <p style="margin-top:12px;">Auto-Wiki で自動生成</p>

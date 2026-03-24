@@ -6,24 +6,30 @@
       "filename": "articles/project-diana-agentic-rag.html",
       "summary": "Policy-enforced retrieval と document ingest を分離デプロイで運用する private repository。FastAPI API、ingest job、Next.js ワークスペース UI、Azure Bicep 定義を単一のモノレポで束ねる。",
       "created_at": "2026-03-24T17:33:23+09:00",
-      "updated_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
       "origin": "root",
       "source_id": null,
       "links_to": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
+        "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
         "policy-enforced-retrieval",
+        "retrieval-round-policy",
         "split-deployment-rag",
         "workspace-trace-ui"
       ],
       "linked_from": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
+        "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
         "policy-enforced-retrieval",
+        "retrieval-round-policy",
         "split-deployment-rag"
       ],
       "expansion_status": "done"
@@ -34,7 +40,7 @@
       "filename": "articles/split-deployment-rag.html",
       "summary": "対話 API、文書 ingest、Web UI を別の実行単位として分離する RAG 構成。Project Diana では応答経路と indexing 経路の失敗境界と権限境界を切り分ける。",
       "created_at": "2026-03-24T17:42:07+09:00",
-      "updated_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
       "origin": "expanded",
       "source_id": "project-diana-agentic-rag",
       "links_to": [
@@ -42,20 +48,25 @@
         "azure-container-apps-topology",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
+        "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
         "local-docker-compose-profile",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
+        "retrieval-round-policy",
         "workspace-trace-ui"
       ],
       "linked_from": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
+        "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
         "policy-enforced-retrieval",
-        "project-diana-agentic-rag"
+        "project-diana-agentic-rag",
+        "retrieval-round-policy"
       ],
       "expansion_status": "done"
     },
@@ -65,10 +76,11 @@
       "filename": "articles/env-contract-management.html",
       "summary": "env/contract.json を source of truth にして chat/job/web の設定責務を統一する運用モデル。profile 生成、整合性検証、runtime access convention がこの契約を中心に組まれている。",
       "created_at": "2026-03-24T17:42:07+09:00",
-      "updated_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
       "origin": "expanded",
       "source_id": "project-diana-agentic-rag",
       "links_to": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
         "env-consistency-checks",
@@ -77,14 +89,18 @@
         "module-env-catalogs",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
+        "retrieval-round-policy",
         "split-deployment-rag"
       ],
       "linked_from": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
+        "env-consistency-checks",
         "env-profile-rendering",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
+        "retrieval-round-policy",
         "split-deployment-rag"
       ],
       "expansion_status": "done"
@@ -95,25 +111,31 @@
       "filename": "articles/document-ingestion-pipeline.html",
       "summary": "validate から callback までを段階分割した非同期 ingest 処理系。prepare、parse、picture OCR、chunk、metadata、index を明示的に分離し、失敗コードと callback で API 境界へ返す。",
       "created_at": "2026-03-24T17:42:07+09:00",
-      "updated_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
       "origin": "expanded",
       "source_id": "project-diana-agentic-rag",
       "links_to": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
+        "env-consistency-checks",
         "env-contract-management",
         "ingest-callback-contract",
         "parse-mode-fallback",
         "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
+        "retrieval-round-policy",
         "split-deployment-rag",
         "workspace-trace-ui"
       ],
       "linked_from": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
+        "env-consistency-checks",
         "env-contract-management",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
+        "retrieval-round-policy",
         "split-deployment-rag"
       ],
       "expansion_status": "done"
@@ -146,7 +168,7 @@
         "project-diana-agentic-rag",
         "split-deployment-rag"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
     },
     "policy-enforced-retrieval": {
       "slug": "policy-enforced-retrieval",
@@ -154,12 +176,14 @@
       "filename": "articles/policy-enforced-retrieval.html",
       "summary": "Policy-Enforced Retrieval は、Project Diana の chat 経路で mandatory filter と validated optional hint を組み合わせて retrieval を制御する設計である。モデル提案は検索範囲を狭められても広げられず、round policy と budget がその上で動く。",
       "created_at": "2026-03-24T17:53:58+09:00",
-      "updated_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
       "origin": "expanded",
       "source_id": "project-diana-agentic-rag",
       "links_to": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
+        "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
         "live-retrieval-lanes",
@@ -171,14 +195,17 @@
         "workspace-trace-ui"
       ],
       "linked_from": [
+        "azure-container-apps-topology",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
+        "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
         "project-diana-agentic-rag",
+        "retrieval-round-policy",
         "split-deployment-rag"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
     },
     "env-profile-rendering": {
       "slug": "env-profile-rendering",
@@ -186,10 +213,11 @@
       "filename": "articles/env-profile-rendering.html",
       "summary": "Env Profile Rendering は、base template と contract profile override から apps/<module>/.env.<profile> を生成する仕組みである。Project Diana では split deployment の各モジュールへ設定を配る共通経路として tools/render_env_profiles.py が使われる。",
       "created_at": "2026-03-24T17:53:58+09:00",
-      "updated_at": "2026-03-24T17:53:58+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
       "origin": "expanded",
       "source_id": "env-contract-management",
       "links_to": [
+        "azure-container-apps-topology",
         "check-mode-drift-detection",
         "env-consistency-checks",
         "env-contract-management",
@@ -201,14 +229,121 @@
         "split-deployment-rag"
       ],
       "linked_from": [
+        "azure-container-apps-topology",
+        "env-consistency-checks",
+        "env-contract-management",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "done"
+    },
+    "retrieval-round-policy": {
+      "slug": "retrieval-round-policy",
+      "title": "Retrieval Round Policy",
+      "filename": "articles/retrieval-round-policy.html",
+      "summary": "Retrieval Round Policy は、Project Diana の chat orchestrator が retrieval round を mandatory_broad から optional_narrowing、optional_relaxed へ進める制御である。accepted metadata hint と残予算を見ながら round budget を切り、out-of-order な緩和を防ぐ。",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
+      "origin": "expanded",
+      "source_id": "policy-enforced-retrieval",
+      "links_to": [
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "live-retrieval-lanes",
+        "multi-query-budget-splitting",
+        "optimization-priority-modes",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-budgeting",
+        "round-order-violation-guards",
+        "split-deployment-rag",
+        "taxonomy-driven-metadata-validation",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
         "env-contract-management",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "split-deployment-rag"
       ],
       "expansion_status": "pending"
+    },
+    "azure-container-apps-topology": {
+      "slug": "azure-container-apps-topology",
+      "title": "Azure Container Apps Topology",
+      "filename": "articles/azure-container-apps-topology.html",
+      "summary": "Azure Container Apps Topology は、Project Diana の infra/main.bicep が split deployment を API Container App、manual Container Apps Job、Static Web App、Storage Table 群として具体化する配備構成である。API には ingest job だけを起動する scoped role assignment が与えられる。",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
+      "origin": "expanded",
+      "source_id": "split-deployment-rag",
+      "links_to": [
+        "api-job-trigger-boundary",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "env-profile-rendering",
+        "job-scope-role-assignment",
+        "local-docker-compose-profile",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag",
+        "static-web-app-build-contract",
+        "storage-backed-status-tables"
+      ],
+      "linked_from": [
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "env-profile-rendering",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "pending"
+    },
+    "env-consistency-checks": {
+      "slug": "env-consistency-checks",
+      "title": "Env Consistency Checks",
+      "filename": "articles/env-consistency-checks.html",
+      "summary": "Env Consistency Checks は、Project Diana の tools/check_env_consistency.py が env/contract.json、module catalog、.env.example、profile override の一致を検証する仕組みである。requiredness、owner/domain、domain_index、profile ごとの APP_ENV を静的に突き合わせ、設定 drift を CI と local check で止める。",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "updated_at": "2026-03-24T18:08:07+09:00",
+      "origin": "expanded",
+      "source_id": "env-contract-management",
+      "links_to": [
+        "azure-container-apps-topology",
+        "check-mode-drift-detection",
+        "document-ingestion-pipeline",
+        "domain-index-integrity",
+        "env-contract-management",
+        "env-owner-domain-rules",
+        "env-profile-rendering",
+        "module-env-catalogs",
+        "policy-enforced-retrieval",
+        "profile-requiredness-matrix",
+        "project-diana-agentic-rag",
+        "rendered-runtime-env-files",
+        "retrieval-round-policy",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "azure-container-apps-topology",
+        "document-ingestion-pipeline",
+        "env-contract-management",
+        "env-profile-rendering",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-round-policy",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "pending"
     }
   },
   "root_id": "project-diana-agentic-rag",
-  "total_count": 7
+  "total_count": 10
 }

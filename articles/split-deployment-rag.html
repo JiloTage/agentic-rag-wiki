@@ -24,7 +24,7 @@
   <div class="wiki-content">
     <main class="wiki-main">
       <h1 class="article-title">Split Deployment RAG</h1>
-      <div class="article-meta">最終更新: 2026-03-24 17:53 JST</div>
+      <div class="article-meta">最終更新: 2026-03-24 18:08 JST</div>
       <div class="article-summary">Split Deployment RAG は、対話 API、文書 ingest、Web UI を別の実行単位として分離する RAG 構成である。Project Diana ではこの分離により、応答経路と indexing 経路の失敗境界、権限境界、スケール戦略を切り分けている。</div>
 
       <p><b>Split Deployment RAG</b> とは、RAG システムの主要責務を単一プロセスに押し込めず、別サービスとして運用する考え方である。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> では <code>apps/web</code>、<code>apps/chat</code>、<code>apps/job</code>、<code>infra</code> がこの分離を担い、<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> や <a href="env-contract-management.html">環境変数コントラクト管理</a> もその前提の上に組み立てられている。</p>
@@ -154,6 +154,9 @@
         <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
         <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
         <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="azure-container-apps-topology.html">Azure Container Apps Topology</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
       </ul>
     </div>
     <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
