@@ -28,6 +28,8 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "optimization-priority-modes",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "retrieval-round-policy",
         "split-deployment-rag"
@@ -64,6 +66,8 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "optimization-priority-modes",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "retrieval-round-policy"
@@ -98,6 +102,8 @@
         "document-ingestion-pipeline",
         "env-consistency-checks",
         "env-profile-rendering",
+        "optimization-priority-modes",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
@@ -133,6 +139,7 @@
         "docling-hybrid-chunking",
         "env-consistency-checks",
         "env-contract-management",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
@@ -164,6 +171,7 @@
       "linked_from": [
         "document-ingestion-pipeline",
         "env-contract-management",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "split-deployment-rag"
@@ -201,6 +209,8 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "optimization-priority-modes",
+        "picture-ocr-stage",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
         "split-deployment-rag"
@@ -232,6 +242,7 @@
         "azure-container-apps-topology",
         "env-consistency-checks",
         "env-contract-management",
+        "optimization-priority-modes",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "split-deployment-rag"
@@ -266,11 +277,12 @@
         "document-ingestion-pipeline",
         "env-consistency-checks",
         "env-contract-management",
+        "optimization-priority-modes",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "split-deployment-rag"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
     },
     "azure-container-apps-topology": {
       "slug": "azure-container-apps-topology",
@@ -304,7 +316,7 @@
         "project-diana-agentic-rag",
         "split-deployment-rag"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
     },
     "env-consistency-checks": {
       "slug": "env-consistency-checks",
@@ -336,14 +348,285 @@
         "document-ingestion-pipeline",
         "env-contract-management",
         "env-profile-rendering",
+        "optimization-priority-modes",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
         "split-deployment-rag"
       ],
+      "expansion_status": "done"
+    },
+    "picture-ocr-stage": {
+      "slug": "picture-ocr-stage",
+      "title": "Picture OCR Stage",
+      "filename": "articles/picture-ocr-stage.html",
+      "summary": "Picture OCR Stage は、ドキュメント内の画像から文字を読み取る処理ステージである。parse ステージで抽出された画像に対して Azure Document Intelligence の OCR を実行し、読み取ったテキストを後続の chunk・metadata ステージへ渡す。選択的 OCR と部分成功許容により、コスト効率と耐障害性を両立する。",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "updated_at": "2026-03-24T18:30:00+09:00",
+      "origin": "expanded",
+      "source_id": "document-ingestion-pipeline",
+      "links_to": [
+        "azure-ocr-usage-monitoring",
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "image-preprocessing-parameters",
+        "ocr-confidence-tuning",
+        "parse-mode-fallback",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "split-deployment-rag",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "context-full-construction",
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline"
+      ],
+      "expansion_status": "done"
+    },
+    "context-full-construction": {
+      "slug": "context-full-construction",
+      "title": "Context Full Construction",
+      "filename": "articles/context-full-construction.html",
+      "summary": "Context Full Construction は、チャンクの短い本文だけでなく、見出し境界まで前後に広げた「文脈つき全文」を組み立てる処理である。この context_full フィールドにより、回答生成時に必要十分な背景情報を LLM へ渡せるようになる。",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "updated_at": "2026-03-24T18:30:00+09:00",
+      "origin": "expanded",
+      "source_id": "docling-hybrid-chunking",
+      "links_to": [
+        "chunk-oversize-splitting",
+        "context-deduplication-merge",
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "document-type-aware-context",
+        "env-contract-management",
+        "picture-ocr-stage",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-budgeting",
+        "retrieval-round-policy",
+        "search-summary-enrichment",
+        "semantic-paragraph-segmentation",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "docling-hybrid-chunking"
+      ],
+      "expansion_status": "done"
+    },
+    "optimization-priority-modes": {
+      "slug": "optimization-priority-modes",
+      "title": "Optimization Priority Modes",
+      "filename": "articles/optimization-priority-modes.html",
+      "summary": "Optimization Priority Modes は、Project Diana の検索処理において quality・latency・cost の 3 モードで検索予算の配分を切り替える仕組みである。normalize_optimize_priority() が環境変数から方針を読み取り、各ラウンドの候補数や再ランキング深度を調整する。",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "updated_at": "2026-03-24T18:30:00+09:00",
+      "origin": "expanded",
+      "source_id": "retrieval-round-policy",
+      "links_to": [
+        "env-consistency-checks",
+        "env-contract-management",
+        "env-profile-rendering",
+        "live-retrieval-lanes",
+        "multi-query-budget-splitting",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-budgeting",
+        "retrieval-round-policy",
+        "split-deployment-rag",
+        "workspace-trace-ui",
+        "priority-mode-drift-analysis",
+        "per-request-priority-override",
+        "adaptive-mode-switching",
+        "mode-ab-testing-framework"
+      ],
+      "linked_from": [
+        "retrieval-round-policy"
+      ],
+      "expansion_status": "done"
+    },
+    "job-scope-role-assignment": {
+      "slug": "job-scope-role-assignment",
+      "title": "Job Scope Role Assignment",
+      "filename": "articles/job-scope-role-assignment.html",
+      "summary": "Job Scope Role Assignment は、API のマネージド ID に対し ingest job リソースだけを操作できる Contributor ロールを割り当てる設計パターンである。Bicep の roleAssignments でスコープを job 単体に絞ることで、最小権限の原則を実装する。",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "updated_at": "2026-03-24T18:45:00+09:00",
+      "origin": "expanded",
+      "source_id": "azure-container-apps-topology",
+      "links_to": [
+        "api-job-trigger-boundary",
+        "azure-container-apps-topology",
+        "bicep-idempotent-role-binding",
+        "custom-role-definition-patterns",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "env-profile-rendering",
+        "local-docker-compose-profile",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "role-assignment-audit-trail",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "azure-container-apps-topology",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "done"
+    },
+    "search-summary-enrichment": {
+      "slug": "search-summary-enrichment",
+      "title": "Search Summary Enrichment",
+      "filename": "articles/search-summary-enrichment.html",
+      "summary": "Search Summary Enrichment は、チャンク分割の段階で検索結果表示に最適化された要約を別フィールドとして生成する設計である。検索ヒット一覧の表示品質とユーザーの選択精度を高め、RAG パイプライン全体の回答品質に寄与する。",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "updated_at": "2026-03-24T18:45:00+09:00",
+      "origin": "expanded",
+      "source_id": "docling-hybrid-chunking",
+      "links_to": [
+        "adaptive-summary-length",
+        "chunk-oversize-splitting",
+        "context-full-construction",
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "incremental-re-enrichment",
+        "picture-ocr-stage",
+        "policy-enforced-retrieval",
+        "retrieval-round-policy",
+        "summary-quality-scoring"
+      ],
+      "linked_from": [
+        "context-full-construction",
+        "docling-hybrid-chunking"
+      ],
+      "expansion_status": "done"
+    },
+    "workspace-trace-ui": {
+      "slug": "workspace-trace-ui",
+      "title": "Workspace Trace UI",
+      "filename": "articles/workspace-trace-ui.html",
+      "summary": "Workspace Trace UI は、Project Diana の Next.js ワークスペース画面に組み込まれたトレース表示機能である。retrieval round の検証ログ、ingest job の進捗、policy enforcement の判断過程をリアルタイムで可視化し、説明責任と運用デバッグを支える。",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "updated_at": "2026-03-24T18:45:00+09:00",
+      "origin": "expanded",
+      "source_id": "project-diana-agentic-rag",
+      "links_to": [
+        "azure-container-apps-topology",
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "optimization-priority-modes",
+        "picture-ocr-stage",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-round-policy",
+        "split-deployment-rag",
+        "trace-alert-rules",
+        "trace-diff-comparison",
+        "trace-export-api",
+        "trace-latency-breakdown"
+      ],
+      "linked_from": [
+        "document-ingestion-pipeline",
+        "optimization-priority-modes",
+        "picture-ocr-stage",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-round-policy"
+      ],
+      "expansion_status": "done"
+    },
+    "round-order-violation-guards": {
+      "slug": "round-order-violation-guards",
+      "title": "Round Order Violation Guards",
+      "filename": "articles/round-order-violation-guards.html",
+      "summary": "Round Order Violation Guards は、allowed_next テーブルに基づいて検索ラウンドの遷移順序（mandatory_broad → optional_narrowing → optional_relaxed）を強制するガードである。順序を逸脱した遷移は policy_order_violation として検知され、その検索は失敗扱いになる。",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "updated_at": "2026-03-24T19:00:00+09:00",
+      "origin": "expanded",
+      "source_id": "retrieval-round-policy",
+      "links_to": [
+        "adaptive-guard-relaxation",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "guard-replay-simulator",
+        "optimization-priority-modes",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-budgeting",
+        "retrieval-round-policy",
+        "violation-alert-routing",
+        "violation-budget-accounting",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "retrieval-round-policy"
+      ],
+      "expansion_status": "done"
+    },
+    "domain-index-integrity": {
+      "slug": "domain-index-integrity",
+      "title": "Domain Index Integrity",
+      "filename": "articles/domain-index-integrity.html",
+      "summary": "Domain Index Integrity は、env/contract.json の domain_index が各環境変数の key metadata と一致していることを強制する検証設計である。auth、retrieval、storage、observability、runtime の5ドメインの順番と内容が各変数の分類と整合しているかを静的にチェックする。",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "updated_at": "2026-03-24T19:00:00+09:00",
+      "origin": "expanded",
+      "source_id": "env-consistency-checks",
+      "links_to": [
+        "azure-container-apps-topology",
+        "check-mode-drift-detection",
+        "env-consistency-checks",
+        "env-contract-management",
+        "env-owner-domain-rules",
+        "env-profile-rendering",
+        "module-env-catalogs",
+        "policy-enforced-retrieval",
+        "profile-requiredness-matrix",
+        "project-diana-agentic-rag",
+        "rendered-runtime-env-files",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "env-consistency-checks"
+      ],
+      "expansion_status": "pending"
+    },
+    "taxonomy-driven-metadata-validation": {
+      "slug": "taxonomy-driven-metadata-validation",
+      "title": "Taxonomy-Driven Metadata Validation",
+      "filename": "articles/taxonomy-driven-metadata-validation.html",
+      "summary": "Taxonomy-Driven Metadata Validation は、モデルが提案するメタデータヒントを定義済みのタクソノミーに照合し、受理・拒否を判断する仕組みである。validated optional hint を taxonomy と metadata schema で正規化することで、検索フィルターの安全性と一貫性を保証する。",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "updated_at": "2026-03-24T19:00:00+09:00",
+      "origin": "expanded",
+      "source_id": "policy-enforced-retrieval",
+      "links_to": [
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "hint-acceptance-rate-analytics",
+        "live-retrieval-lanes",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-round-policy",
+        "taxonomy-changelog-audit",
+        "taxonomy-conflict-resolution",
+        "taxonomy-migration-workflow",
+        "workspace-trace-ui"
+      ],
+      "linked_from": [
+        "policy-enforced-retrieval",
+        "retrieval-round-policy"
+      ],
       "expansion_status": "pending"
     }
   },
   "root_id": "project-diana-agentic-rag",
-  "total_count": 10
+  "total_count": 19
 }

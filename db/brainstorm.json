@@ -1,87 +1,6 @@
 {
   "queue": [
     {
-      "proposed_slug": "context-full-construction",
-      "proposed_title": "Context Full Construction",
-      "rationale": "chunk ごとに context_full を組み立てる処理は要約 text と並ぶ検索品質の核である。",
-      "interestingness_score": 0.86,
-      "source_id": "docling-hybrid-chunking",
-      "created_at": "2026-03-24T17:53:58+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "picture-ocr-stage",
-      "proposed_title": "Picture OCR Stage",
-      "rationale": "本文抽出と画像 OCR をどう切り分けて併用するかは parse 戦略の理解に直結する。",
-      "interestingness_score": 0.85,
-      "source_id": "document-ingestion-pipeline",
-      "created_at": "2026-03-24T17:42:07+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "optimization-priority-modes",
-      "proposed_title": "Optimization Priority Modes",
-      "rationale": "quality / latency / cost の三つの optimize priority が budget の切り方をどう変えるかは独立に掘る価値がある。",
-      "interestingness_score": 0.85,
-      "source_id": "retrieval-round-policy",
-      "created_at": "2026-03-24T18:08:07+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "workspace-trace-ui",
-      "proposed_title": "Workspace Trace UI",
-      "rationale": "trace modal と workspace shell は説明責任と運用デバッグを担うため、UI 観点で独立記事化しやすい。",
-      "interestingness_score": 0.84,
-      "source_id": "project-diana-agentic-rag",
-      "created_at": "2026-03-24T17:33:23+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "search-summary-enrichment",
-      "proposed_title": "Search Summary Enrichment",
-      "rationale": "検索結果用 summary を chunking 段階で別フィールド化する設計は retrieval 体験に直結する。",
-      "interestingness_score": 0.84,
-      "source_id": "docling-hybrid-chunking",
-      "created_at": "2026-03-24T17:53:58+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "job-scope-role-assignment",
-      "proposed_title": "Job Scope Role Assignment",
-      "rationale": "API identity に job resource スコープだけの権限を与える設計は split deployment の実運用に直結する。",
-      "interestingness_score": 0.84,
-      "source_id": "azure-container-apps-topology",
-      "created_at": "2026-03-24T18:08:07+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "domain-index-integrity",
-      "proposed_title": "Domain Index Integrity",
-      "rationale": "contract の domain_index が key metadata と一致することを強制する設計は env governance の中核である。",
-      "interestingness_score": 0.84,
-      "source_id": "env-consistency-checks",
-      "created_at": "2026-03-24T18:08:07+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "taxonomy-driven-metadata-validation",
-      "proposed_title": "Taxonomy-Driven Metadata Validation",
-      "rationale": "validated optional hint を taxonomy と metadata schema で正規化する箇所は policy safety の下支えである。",
-      "interestingness_score": 0.83,
-      "source_id": "policy-enforced-retrieval",
-      "created_at": "2026-03-24T17:53:58+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "round-order-violation-guards",
-      "proposed_title": "Round Order Violation Guards",
-      "rationale": "allowed_next による round 遷移制約は retrieval の安全弁として切り出して読む価値がある。",
-      "interestingness_score": 0.83,
-      "source_id": "retrieval-round-policy",
-      "created_at": "2026-03-24T18:08:07+09:00",
-      "status": "queued"
-    },
-    {
       "proposed_slug": "ingest-callback-contract",
       "proposed_title": "Ingest Callback Contract",
       "rationale": "job と API の境界を成立させる callback payload 契約は split deployment の重要な接点である。",
@@ -224,9 +143,432 @@
       "source_id": "env-contract-management",
       "created_at": "2026-03-24T17:42:07+09:00",
       "status": "queued"
+    },
+    {
+      "proposed_slug": "tool-round-executor",
+      "proposed_title": "Tool Round Executor",
+      "rationale": "検索の同時実行と重複除去・スコアリングを担うエンジンはラウンドポリシーの実行面を支える。",
+      "interestingness_score": 0.82,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "retrieval-validation-logging",
+      "proposed_title": "Retrieval Validation Logging",
+      "rationale": "ラウンドごとのヒント・フィルタ・予算の検証ログは運用デバッグの核である。",
+      "interestingness_score": 0.74,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "retrieval-result-deduplication",
+      "proposed_title": "Retrieval Result Deduplication",
+      "rationale": "複数ラウンドにまたがる検索結果の統合と再スコアリングは最終回答品質に直結する。",
+      "interestingness_score": 0.71,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "managed-identity-scoping",
+      "proposed_title": "Managed Identity Scoping",
+      "rationale": "Azure マネージド ID をジョブリソースだけに絞り込む設計は最小権限の実装例として独立記事化しやすい。",
+      "interestingness_score": 0.82,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "bicep-parameter-flow",
+      "proposed_title": "Bicep Parameter Flow",
+      "rationale": "main.bicep のパラメータが各リソースへどう受け渡されるかを追うと IaC 設計が見える。",
+      "interestingness_score": 0.78,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "container-app-scaling-rules",
+      "proposed_title": "Container App Scaling Rules",
+      "rationale": "API の minReplicas/maxReplicas とスケーリング設計は運用コストと可用性のバランスを決める。",
+      "interestingness_score": 0.73,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "env-domain-classification",
+      "proposed_title": "Env Domain Classification",
+      "rationale": "auth/retrieval/storage/observability/runtime の5ドメイン分類は env governance の土台である。",
+      "interestingness_score": 0.79,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "env-convention-checker",
+      "proposed_title": "Env Convention Checker",
+      "rationale": "check_env_convention.py による命名パターン検証は consistency checks の補完的な品質保証である。",
+      "interestingness_score": 0.76,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "ci-env-validation-gate",
+      "proposed_title": "CI Env Validation Gate",
+      "rationale": "CI パイプラインでの環境変数チェックゲートは drift を本番到達前に止める最後の砦である。",
+      "interestingness_score": 0.73,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "semantic-paragraph-segmentation",
+      "proposed_title": "Semantic Paragraph Segmentation",
+      "rationale": "見出し境界だけでなく意味的な段落境界を利用したより精密な文脈切り出し手法。",
+      "interestingness_score": 0.82,
+      "source_id": "context-full-construction",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "context-deduplication-merge",
+      "proposed_title": "Context Deduplication Merge",
+      "rationale": "複数チャンクの context_full が重複する場合に統合して冗長性を排除する仕組み。",
+      "interestingness_score": 0.78,
+      "source_id": "context-full-construction",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "document-type-aware-context",
+      "proposed_title": "Document-Type Aware Context",
+      "rationale": "文書種別に応じて context_full の切り出し戦略を変える手法。",
+      "interestingness_score": 0.75,
+      "source_id": "context-full-construction",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "azure-ocr-usage-monitoring",
+      "proposed_title": "Azure OCR Usage Monitoring",
+      "rationale": "OCR API 利用量と課金の監視は Picture OCR Stage の運用コスト管理に直結する。",
+      "interestingness_score": 0.78,
+      "source_id": "picture-ocr-stage",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "image-preprocessing-parameters",
+      "proposed_title": "Image Preprocessing Parameters",
+      "rationale": "OCR 前の画像前処理パラメータは認識精度に直接影響する。",
+      "interestingness_score": 0.75,
+      "source_id": "picture-ocr-stage",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "ocr-confidence-tuning",
+      "proposed_title": "OCR Confidence Tuning",
+      "rationale": "信頼度閾値の調整は OCR テキストの採用基準を決める重要なパラメータである。",
+      "interestingness_score": 0.76,
+      "source_id": "picture-ocr-stage",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "priority-mode-drift-analysis",
+      "proposed_title": "Priority Mode Drift Analysis",
+      "rationale": "運用中に priority mode の効果が環境変化で劣化する問題の分析と対処法。",
+      "interestingness_score": 0.78,
+      "source_id": "optimization-priority-modes",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "per-request-priority-override",
+      "proposed_title": "Per-Request Priority Override",
+      "rationale": "リクエスト単位で priority mode を上書きする仕組みは柔軟な運用に必要。",
+      "interestingness_score": 0.76,
+      "source_id": "optimization-priority-modes",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "adaptive-mode-switching",
+      "proposed_title": "Adaptive Mode Switching",
+      "rationale": "負荷やレイテンシに応じて自動的に mode を切り替える適応型制御。",
+      "interestingness_score": 0.74,
+      "source_id": "optimization-priority-modes",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "mode-ab-testing-framework",
+      "proposed_title": "Mode A/B Testing Framework",
+      "rationale": "priority mode 間の効果をA/Bテストで比較する仕組み。",
+      "interestingness_score": 0.72,
+      "source_id": "optimization-priority-modes",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "summary-quality-scoring",
+      "proposed_title": "Summary Quality Scoring",
+      "rationale": "生成された search_text の品質を定量評価する仕組み。",
+      "interestingness_score": 0.82,
+      "source_id": "search-summary-enrichment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "incremental-re-enrichment",
+      "proposed_title": "Incremental Re-Enrichment",
+      "rationale": "検索パフォーマンスが低いチャンクだけを対象に要約を再生成する差分更新の仕組み。",
+      "interestingness_score": 0.78,
+      "source_id": "search-summary-enrichment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "adaptive-summary-length",
+      "proposed_title": "Adaptive Summary Length",
+      "rationale": "チャンクの長さに応じて要約の目標トークン数を動的に調整する設計。",
+      "interestingness_score": 0.75,
+      "source_id": "search-summary-enrichment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "trace-export-api",
+      "proposed_title": "Trace Export API",
+      "rationale": "トレースデータを外部監視ツールや分析基盤へエクスポートする API。",
+      "interestingness_score": 0.82,
+      "source_id": "workspace-trace-ui",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "trace-latency-breakdown",
+      "proposed_title": "Trace Latency Breakdown",
+      "rationale": "各 retrieval round やステージの応答時間を分解して可視化する機能。",
+      "interestingness_score": 0.78,
+      "source_id": "workspace-trace-ui",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "trace-diff-comparison",
+      "proposed_title": "Trace Diff Comparison",
+      "rationale": "同じクエリに対する2回分のトレースを並べて差分を表示する機能。",
+      "interestingness_score": 0.75,
+      "source_id": "workspace-trace-ui",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "trace-alert-rules",
+      "proposed_title": "Trace Alert Rules",
+      "rationale": "トレースデータに基づく異常検知ルール。ヒット0件の頻発やround escalationの急増を通知。",
+      "interestingness_score": 0.73,
+      "source_id": "workspace-trace-ui",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "custom-role-definition-patterns",
+      "proposed_title": "Custom Role Definition Patterns",
+      "rationale": "Contributor の代わりに jobs/start/action だけを許可するカスタムロール定義パターン。",
+      "interestingness_score": 0.82,
+      "source_id": "job-scope-role-assignment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "bicep-idempotent-role-binding",
+      "proposed_title": "Bicep Idempotent Role Binding",
+      "rationale": "guid() による決定的 GUID 生成で roleAssignment の再デプロイ時エラーを回避するパターン。",
+      "interestingness_score": 0.78,
+      "source_id": "job-scope-role-assignment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "role-assignment-audit-trail",
+      "proposed_title": "Role Assignment Audit Trail",
+      "rationale": "Azure Activity Log を活用して roleAssignment の変更履歴を追跡する運用監視。",
+      "interestingness_score": 0.75,
+      "source_id": "job-scope-role-assignment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "taxonomy-conflict-resolution",
+      "proposed_title": "Taxonomy Conflict Resolution",
+      "rationale": "エイリアスの衝突を検出・解決する仕組み。",
+      "interestingness_score": 0.8,
+      "source_id": "taxonomy-driven-metadata-validation",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "taxonomy-migration-workflow",
+      "proposed_title": "Taxonomy Migration Workflow",
+      "rationale": "タクソノミー更新時に既存ドキュメントの再インデックスを段階実施するワークフロー。",
+      "interestingness_score": 0.85,
+      "source_id": "taxonomy-driven-metadata-validation",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "taxonomy-changelog-audit",
+      "proposed_title": "Taxonomy Changelog Audit",
+      "rationale": "タクソノミーの変更履歴を記録し追跡する監査機能。",
+      "interestingness_score": 0.7,
+      "source_id": "taxonomy-driven-metadata-validation",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "hint-acceptance-rate-analytics",
+      "proposed_title": "Hint Acceptance Rate Analytics",
+      "rationale": "モデルが提案したヒントの受理率を分析しタクソノミー拡充にフィードバックする機能。",
+      "interestingness_score": 0.9,
+      "source_id": "taxonomy-driven-metadata-validation",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "violation-alert-routing",
+      "proposed_title": "Violation Alert Routing",
+      "rationale": "policy_order_violation などの違反イベントを通知する配信ルール。",
+      "interestingness_score": 0.8,
+      "source_id": "round-order-violation-guards",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "guard-replay-simulator",
+      "proposed_title": "Guard Replay Simulator",
+      "rationale": "過去のラウンド遷移を再現しガードの判定を検証するシミュレータ。",
+      "interestingness_score": 0.85,
+      "source_id": "round-order-violation-guards",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "adaptive-guard-relaxation",
+      "proposed_title": "Adaptive Guard Relaxation",
+      "rationale": "過去の検索実績に基づいて段階スキップを安全に許可する将来拡張。",
+      "interestingness_score": 0.8,
+      "source_id": "round-order-violation-guards",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "violation-budget-accounting",
+      "proposed_title": "Violation Budget Accounting",
+      "rationale": "violation で消費されたラウンド予算の扱いを optimization priority mode ごとに定義するルール。",
+      "interestingness_score": 0.75,
+      "source_id": "round-order-violation-guards",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
     }
   ],
   "history": [
+    {
+      "proposed_slug": "domain-index-integrity",
+      "proposed_title": "Domain Index Integrity",
+      "rationale": "contract の domain_index が key metadata と一致することを強制する設計は env governance の中核である。",
+      "interestingness_score": 0.84,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T19:00:00+09:00"
+    },
+    {
+      "proposed_slug": "taxonomy-driven-metadata-validation",
+      "proposed_title": "Taxonomy-Driven Metadata Validation",
+      "rationale": "validated optional hint を taxonomy と metadata schema で正規化する箇所は policy safety の下支えである。",
+      "interestingness_score": 0.83,
+      "source_id": "policy-enforced-retrieval",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T19:00:00+09:00"
+    },
+    {
+      "proposed_slug": "round-order-violation-guards",
+      "proposed_title": "Round Order Violation Guards",
+      "rationale": "allowed_next による round 遷移制約は retrieval の安全弁として切り出して読む価値がある。",
+      "interestingness_score": 0.83,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T19:00:00+09:00"
+    },
+    {
+      "proposed_slug": "workspace-trace-ui",
+      "proposed_title": "Workspace Trace UI",
+      "rationale": "trace modal と workspace shell は説明責任と運用デバッグを担うため、UI 観点で独立記事化しやすい。",
+      "interestingness_score": 0.84,
+      "source_id": "project-diana-agentic-rag",
+      "created_at": "2026-03-24T17:33:23+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:45:00+09:00"
+    },
+    {
+      "proposed_slug": "search-summary-enrichment",
+      "proposed_title": "Search Summary Enrichment",
+      "rationale": "検索結果用 summary を chunking 段階で別フィールド化する設計は retrieval 体験に直結する。",
+      "interestingness_score": 0.84,
+      "source_id": "docling-hybrid-chunking",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:45:00+09:00"
+    },
+    {
+      "proposed_slug": "job-scope-role-assignment",
+      "proposed_title": "Job Scope Role Assignment",
+      "rationale": "API identity に job resource スコープだけの権限を与える設計は split deployment の実運用に直結する。",
+      "interestingness_score": 0.84,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:45:00+09:00"
+    },
+    {
+      "proposed_slug": "optimization-priority-modes",
+      "proposed_title": "Optimization Priority Modes",
+      "rationale": "quality / latency / cost の三つの optimize priority が budget の切り方をどう変えるかは独立に掘る価値がある。",
+      "interestingness_score": 0.85,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:30:00+09:00"
+    },
+    {
+      "proposed_slug": "context-full-construction",
+      "proposed_title": "Context Full Construction",
+      "rationale": "chunk ごとに context_full を組み立てる処理は要約 text と並ぶ検索品質の核である。",
+      "interestingness_score": 0.86,
+      "source_id": "docling-hybrid-chunking",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:30:00+09:00"
+    },
+    {
+      "proposed_slug": "picture-ocr-stage",
+      "proposed_title": "Picture OCR Stage",
+      "rationale": "本文抽出と画像 OCR をどう切り分けて併用するかは parse 戦略の理解に直結する。",
+      "interestingness_score": 0.85,
+      "source_id": "document-ingestion-pipeline",
+      "created_at": "2026-03-24T17:42:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:30:00+09:00"
+    },
     {
       "proposed_slug": "split-deployment-rag",
       "proposed_title": "Split Deployment RAG",
