@@ -209,6 +209,7 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "optimization-priority-modes",
         "picture-ocr-stage",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
@@ -241,6 +242,7 @@
         "azure-container-apps-topology",
         "env-consistency-checks",
         "env-contract-management",
+        "optimization-priority-modes",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "split-deployment-rag"
@@ -346,6 +348,7 @@
         "document-ingestion-pipeline",
         "env-contract-management",
         "env-profile-rendering",
+        "optimization-priority-modes",
         "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
