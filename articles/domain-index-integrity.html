@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Domain Index Integrity - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Domain Index Integrity
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Domain Index Integrity</h1>
+      <div class="article-meta">最終更新: 2026-03-24 19:00 JST</div>
+      <div class="article-summary"><b>Domain Index Integrity</b> は、env/contract.json の domain_index（ドメイン分類の索引）が、各環境変数に付与された key metadata（キーごとのメタ情報）と一致していることを強制する検証設計である。auth、retrieval、storage、observability、runtime の5ドメインについて、索引の順番と内容が各変数の分類と整合しているかを静的にチェックする。</div>
+
+      <p><b>Domain Index Integrity</b> は、<a href="env-contract-management.html">環境変数コントラクト管理</a>の中核ルールの一つである。<code>env/contract.json</code> には各環境変数のメタ情報（owner、domain、requiredness など）が定義されているが、それとは別に <code>domain_index</code> というセクションがある。このセクションは「どのドメインにどの変数が属するか」を索引として一覧化したものである。<a href="env-consistency-checks.html">Env Consistency Checks</a> の中で、この索引と個々の変数の domain フィールドが矛盾していないかを検証するのが Domain Index Integrity の役割である。</p>
+
+      <h2 id="five-domains">5つのドメイン</h2>
+      <p>Project Diana では環境変数を次の5つのドメインに分類している。</p>
+      <ul>
+        <li><strong>auth</strong> — 認証・認可に関する変数（APIキー、トークン、シークレットなど）</li>
+        <li><strong>retrieval</strong> — 検索・取得に関する変数（<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の設定値、インデックス名など）</li>
+        <li><strong>storage</strong> — データ保存に関する変数（接続文字列、テーブル名、<a href="azure-container-apps-topology.html">Azure Container Apps Topology</a> のストレージ設定など）</li>
+        <li><strong>observability</strong> — 可観測性に関する変数（ログレベル、トレースエンドポイント、サンプリング率など）</li>
+        <li><strong>runtime</strong> — 実行環境に関する変数（APP_ENV、ポート番号、ワーカー数など）</li>
+      </ul>
+      <p>この5分類は <a href="env-owner-domain-rules.html">Env Owner Domain Rules</a> で詳しく定義されている。domain_index はこの5つのドメインをキーとし、それぞれに属する変数名の配列を値として持つ。</p>
+
+      <h2 id="structure">domain_index の構造</h2>
+      <p><code>domain_index</code> は contract.json のトップレベルに置かれる辞書（オブジェクト）である。キーはドメイン名、値は変数名の配列で、各配列はアルファベット順にソートされている必要がある。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 420" width="780" height="420">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <!-- domain_index box -->
+          <rect x="40" y="30" width="280" height="360" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="180" y="58" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#202122">domain_index</text>
+          <line x1="60" y1="68" x2="300" y2="68" stroke="#a2a9b1" stroke-width="1" />
+
+          <!-- domain entries -->
+          <rect x="60" y="80" width="240" height="42" rx="6" fill="#eaf3ff" stroke="#36c" stroke-width="1.5" />
+          <text x="180" y="105" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">auth: [API_KEY, SECRET_TOKEN, ...]</text>
+
+          <rect x="60" y="132" width="240" height="42" rx="6" fill="#eaf3ff" stroke="#36c" stroke-width="1.5" />
+          <text x="180" y="157" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">retrieval: [INDEX_NAME, ...]</text>
+
+          <rect x="60" y="184" width="240" height="42" rx="6" fill="#eaf3ff" stroke="#36c" stroke-width="1.5" />
+          <text x="180" y="209" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">storage: [CONN_STR, TABLE, ...]</text>
+
+          <rect x="60" y="236" width="240" height="42" rx="6" fill="#eaf3ff" stroke="#36c" stroke-width="1.5" />
+          <text x="180" y="261" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">observability: [LOG_LEVEL, ...]</text>
+
+          <rect x="60" y="288" width="240" height="42" rx="6" fill="#eaf3ff" stroke="#36c" stroke-width="1.5" />
+          <text x="180" y="313" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">runtime: [APP_ENV, PORT, ...]</text>
+
+          <!-- key metadata box -->
+          <rect x="460" y="30" width="280" height="360" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="600" y="58" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#202122">key metadata</text>
+          <line x1="480" y1="68" x2="720" y2="68" stroke="#a2a9b1" stroke-width="1" />
+
+          <rect x="480" y="80" width="240" height="42" rx="6" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="1.5" />
+          <text x="600" y="100" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#202122">API_KEY</text>
+          <text x="600" y="115" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">domain: "auth", owner: "infra"</text>
+
+          <rect x="480" y="132" width="240" height="42" rx="6" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="1.5" />
+          <text x="600" y="152" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#202122">INDEX_NAME</text>
+          <text x="600" y="167" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">domain: "retrieval", owner: "search"</text>
+
+          <rect x="480" y="184" width="240" height="42" rx="6" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="1.5" />
+          <text x="600" y="204" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#202122">CONN_STR</text>
+          <text x="600" y="219" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">domain: "storage", owner: "infra"</text>
+
+          <rect x="480" y="236" width="240" height="42" rx="6" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="1.5" />
+          <text x="600" y="256" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#202122">LOG_LEVEL</text>
+          <text x="600" y="271" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">domain: "observability", owner: "sre"</text>
+
+          <rect x="480" y="288" width="240" height="42" rx="6" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="1.5" />
+          <text x="600" y="308" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#202122">APP_ENV</text>
+          <text x="600" y="323" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">domain: "runtime", owner: "platform"</text>
+
+          <!-- bidirectional arrows -->
+          <line x1="300" y1="101" x2="480" y2="101" stroke="#36c" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arr)" />
+          <line x1="300" y1="153" x2="480" y2="153" stroke="#36c" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arr)" />
+          <line x1="300" y1="205" x2="480" y2="205" stroke="#36c" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arr)" />
+          <line x1="300" y1="257" x2="480" y2="257" stroke="#36c" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arr)" />
+          <line x1="300" y1="309" x2="480" y2="309" stroke="#36c" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arr)" />
+
+          <!-- check label -->
+          <rect x="340" y="350" width="100" height="32" rx="6" fill="#d5fdd5" stroke="#2a7f2a" stroke-width="1.5" />
+          <text x="390" y="371" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#2a7f2a">検証</text>
+        </svg>
+        <div class="diagram-caption">domain_index の各エントリと key metadata の domain フィールドが双方向に一致しているかを検証する。片方にしかない変数や分類の不一致はエラーとなる。</div>
+      </div>
+
+      <h2 id="validation-rules">検証ルール</h2>
+      <p>Domain Index Integrity の検証は、<code>tools/check_env_consistency.py</code> の中で以下の4つのルールとして実装されている。</p>
+
+      <h3 id="rule-completeness">完全性チェック</h3>
+      <p>contract.json の keys セクションに定義されているすべての変数が、domain_index のいずれかのドメイン配列に含まれている必要がある。逆に、domain_index に含まれる変数名はすべて keys セクションに存在しなければならない。片方にしかない変数があればエラーとなる。</p>
+
+      <h3 id="rule-consistency">一貫性チェック</h3>
+      <p>各変数の key metadata に記載された <code>domain</code> フィールドの値と、その変数が domain_index で所属しているドメインが一致していなければならない。たとえば、ある変数の domain が <code>auth</code> なのに domain_index では <code>storage</code> の配列に入っていたらエラーである。</p>
+
+      <h3 id="rule-ordering">ソート順チェック</h3>
+      <p>各ドメインの変数配列はアルファベット昇順でソートされている必要がある。順番が崩れていると、差分比較（diff）が見づらくなり、レビュー負荷が増える。<a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a> でも、ソート済み配列であることを前提にした差分検出が行われる。</p>
+
+      <h3 id="rule-domain-set">ドメイン集合チェック</h3>
+      <p>domain_index のキー集合は、許可された5ドメイン（auth, retrieval, storage, observability, runtime）と完全に一致しなければならない。未知のドメインが追加されていたり、既存のドメインが欠落していたりするとエラーとなる。これは <a href="env-owner-domain-rules.html">Env Owner Domain Rules</a> で定められた分類体系を守るための制約である。</p>
+
+      <h2 id="failure-scenarios">典型的な違反パターン</h2>
+      <p>開発中によく発生する違反パターンをいくつか紹介する。</p>
+      <ul>
+        <li><strong>変数追加の片手落ち</strong> — keys セクションに新しい変数を追加したが、domain_index への追記を忘れた。<a href="module-env-catalogs.html">Module Env Catalogs</a> と contract の同期漏れで起きやすい。</li>
+        <li><strong>ドメイン変更の不整合</strong> — 変数のドメインを <code>runtime</code> から <code>observability</code> に変更したが、domain_index の移動を忘れた。</li>
+        <li><strong>ソート崩れ</strong> — 手動編集で変数を配列の末尾に追加し、アルファベット順を壊した。</li>
+        <li><strong>変数削除の残骸</strong> — keys セクションから変数を削除したが、domain_index に名前が残っている。</li>
+      </ul>
+      <p>これらはすべて <a href="env-consistency-checks.html">Env Consistency Checks</a> の実行時に検出され、CI（継続的インテグレーション）やローカルの <code>make env-check</code> で開発者にフィードバックされる。</p>
+
+      <h2 id="integration">他の検証との連携</h2>
+      <p>Domain Index Integrity は単独で動くのではなく、<a href="env-consistency-checks.html">Env Consistency Checks</a> の一部として、他の検証と組み合わせて実行される。</p>
+      <ul>
+        <li><a href="profile-requiredness-matrix.html">Profile Requiredness Matrix</a> — 必須性の検証。domain_index が正しくないと、ドメイン単位での必須性レポートも不正確になる。</li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a> — 環境変数ファイルの生成。domain_index を参照してドメインごとのコメントブロックを生成する場合がある。</li>
+        <li><a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a> — 生成されたファイルの検証。domain の整合性が壊れていると、生成結果もおかしくなる。</li>
+        <li><a href="domain-index-migration-tooling.html">Domain Index Migration Tooling</a> — ドメイン分類の変更を安全に行うための移行ツール。</li>
+      </ul>
+      <p><a href="split-deployment-rag.html">Split Deployment RAG</a> の chat、job、web の3モジュールは、同じ contract.json を参照するため、domain_index の不整合はすべてのモジュールに影響する。<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> の運用安定性にとって、この検証は基盤的な役割を果たしている。</p>
+
+      <h2 id="design-rationale">なぜ索引を別に持つのか</h2>
+      <p>各変数に domain フィールドがあるなら、domain_index は冗長に見えるかもしれない。しかし索引を別に持つ理由がある。</p>
+      <ul>
+        <li><strong>一覧性</strong> — ドメインごとにどの変数が属しているかを、keys セクション全体を走査せずに把握できる。変数が100個を超えると、この一覧性は重要になる。</li>
+        <li><strong>レビュー効率</strong> — PR（プルリクエスト）で domain_index の差分を見れば、どのドメインに変数が増減したかが一目でわかる。</li>
+        <li><strong>ツール連携</strong> — <a href="env-profile-rendering.html">Env Profile Rendering</a> や <a href="contract-schema-linter.html">Contract Schema Linter</a> などのツールが、ドメインごとの変数リストを高速に参照できる。</li>
+        <li><strong>整合性の二重保証</strong> — 冗長だからこそ、片方を変え忘れたときに検出できる。これは意図的な設計である。</li>
+      </ul>
+      <p>この「意図的な冗長性」のアプローチは、<a href="cross-reference-redundancy-pattern.html">Cross-Reference Redundancy Pattern</a> として他のシステムでも見られる設計パターンである。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#five-domains">5つのドメイン</a></li>
+          <li><a href="#structure">domain_index の構造</a></li>
+          <li><a href="#validation-rules">検証ルール</a>
+            <ul>
+              <li><a href="#rule-completeness">完全性チェック</a></li>
+              <li><a href="#rule-consistency">一貫性チェック</a></li>
+              <li><a href="#rule-ordering">ソート順チェック</a></li>
+              <li><a href="#rule-domain-set">ドメイン集合チェック</a></li>
+            </ul>
+          </li>
+          <li><a href="#failure-scenarios">典型的な違反パターン</a></li>
+          <li><a href="#integration">他の検証との連携</a></li>
+          <li><a href="#design-rationale">なぜ索引を別に持つのか</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+          <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+          <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+          <li><a href="env-owner-domain-rules.html">Env Owner Domain Rules</a></li>
+          <li><a href="module-env-catalogs.html">Module Env Catalogs</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="azure-container-apps-topology.html">Azure Container Apps Topology</a></li>
+        <li><a href="env-owner-domain-rules.html">Env Owner Domain Rules</a></li>
+        <li><a href="check-mode-drift-detection.html">Check-Mode Drift Detection</a></li>
+        <li><a href="module-env-catalogs.html">Module Env Catalogs</a></li>
+        <li><a href="profile-requiredness-matrix.html">Profile Requiredness Matrix</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+        <li><a href="rendered-runtime-env-files.html">Rendered Runtime Env Files</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="domain-index-migration-tooling.html">Domain Index Migration Tooling</a></li>
+        <li><a href="contract-schema-linter.html">Contract Schema Linter</a></li>
+        <li><a href="cross-reference-redundancy-pattern.html">Cross-Reference Redundancy Pattern</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

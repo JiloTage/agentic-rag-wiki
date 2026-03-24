@@ -90,9 +90,48 @@
       "url": "articles/optimization-priority-modes.html",
       "summary": "quality・latency・cost の 3 モードで検索予算の配分を切り替える最適化方針。",
       "is_root": false
+    },
+    {
+      "id": "domain-index-integrity",
+      "title": "Domain Index Integrity",
+      "url": "articles/domain-index-integrity.html",
+      "summary": "domain_index と key metadata の一致を強制する検証設計。",
+      "is_root": false
     }
   ],
   "links": [
+    {
+      "source": "domain-index-integrity",
+      "target": "env-consistency-checks"
+    },
+    {
+      "source": "domain-index-integrity",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "domain-index-integrity",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "domain-index-integrity",
+      "target": "azure-container-apps-topology"
+    },
+    {
+      "source": "domain-index-integrity",
+      "target": "env-profile-rendering"
+    },
+    {
+      "source": "domain-index-integrity",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "domain-index-integrity",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "env-consistency-checks",
+      "target": "domain-index-integrity"
+    },
     {
       "source": "azure-container-apps-topology",
       "target": "document-ingestion-pipeline"

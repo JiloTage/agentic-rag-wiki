@@ -404,9 +404,111 @@
       "source_id": "job-scope-role-assignment",
       "created_at": "2026-03-24T18:45:00+09:00",
       "status": "queued"
+    },
+    {
+      "proposed_slug": "taxonomy-conflict-resolution",
+      "proposed_title": "Taxonomy Conflict Resolution",
+      "rationale": "エイリアスの衝突を検出・解決する仕組み。",
+      "interestingness_score": 0.8,
+      "source_id": "taxonomy-driven-metadata-validation",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "taxonomy-migration-workflow",
+      "proposed_title": "Taxonomy Migration Workflow",
+      "rationale": "タクソノミー更新時に既存ドキュメントの再インデックスを段階実施するワークフロー。",
+      "interestingness_score": 0.85,
+      "source_id": "taxonomy-driven-metadata-validation",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "taxonomy-changelog-audit",
+      "proposed_title": "Taxonomy Changelog Audit",
+      "rationale": "タクソノミーの変更履歴を記録し追跡する監査機能。",
+      "interestingness_score": 0.7,
+      "source_id": "taxonomy-driven-metadata-validation",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "hint-acceptance-rate-analytics",
+      "proposed_title": "Hint Acceptance Rate Analytics",
+      "rationale": "モデルが提案したヒントの受理率を分析しタクソノミー拡充にフィードバックする機能。",
+      "interestingness_score": 0.9,
+      "source_id": "taxonomy-driven-metadata-validation",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "violation-alert-routing",
+      "proposed_title": "Violation Alert Routing",
+      "rationale": "policy_order_violation などの違反イベントを通知する配信ルール。",
+      "interestingness_score": 0.8,
+      "source_id": "round-order-violation-guards",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "guard-replay-simulator",
+      "proposed_title": "Guard Replay Simulator",
+      "rationale": "過去のラウンド遷移を再現しガードの判定を検証するシミュレータ。",
+      "interestingness_score": 0.85,
+      "source_id": "round-order-violation-guards",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "adaptive-guard-relaxation",
+      "proposed_title": "Adaptive Guard Relaxation",
+      "rationale": "過去の検索実績に基づいて段階スキップを安全に許可する将来拡張。",
+      "interestingness_score": 0.8,
+      "source_id": "round-order-violation-guards",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "violation-budget-accounting",
+      "proposed_title": "Violation Budget Accounting",
+      "rationale": "violation で消費されたラウンド予算の扱いを optimization priority mode ごとに定義するルール。",
+      "interestingness_score": 0.75,
+      "source_id": "round-order-violation-guards",
+      "created_at": "2026-03-24T19:00:00+09:00",
+      "status": "queued"
     }
   ],
   "history": [
+    {
+      "proposed_slug": "domain-index-integrity",
+      "proposed_title": "Domain Index Integrity",
+      "rationale": "contract の domain_index が key metadata と一致することを強制する設計は env governance の中核である。",
+      "interestingness_score": 0.84,
+      "source_id": "env-consistency-checks",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T19:00:00+09:00"
+    },
+    {
+      "proposed_slug": "taxonomy-driven-metadata-validation",
+      "proposed_title": "Taxonomy-Driven Metadata Validation",
+      "rationale": "validated optional hint を taxonomy と metadata schema で正規化する箇所は policy safety の下支えである。",
+      "interestingness_score": 0.83,
+      "source_id": "policy-enforced-retrieval",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T19:00:00+09:00"
+    },
+    {
+      "proposed_slug": "round-order-violation-guards",
+      "proposed_title": "Round Order Violation Guards",
+      "rationale": "allowed_next による round 遷移制約は retrieval の安全弁として切り出して読む価値がある。",
+      "interestingness_score": 0.83,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T19:00:00+09:00"
+    },
     {
       "proposed_slug": "workspace-trace-ui",
       "proposed_title": "Workspace Trace UI",
