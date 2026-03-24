@@ -1,15 +1,6 @@
 {
   "queue": [
     {
-      "proposed_slug": "optimization-priority-modes",
-      "proposed_title": "Optimization Priority Modes",
-      "rationale": "quality / latency / cost の三つの optimize priority が budget の切り方をどう変えるかは独立に掘る価値がある。",
-      "interestingness_score": 0.85,
-      "source_id": "retrieval-round-policy",
-      "created_at": "2026-03-24T18:08:07+09:00",
-      "status": "queued"
-    },
-    {
       "proposed_slug": "workspace-trace-ui",
       "proposed_title": "Workspace Trace UI",
       "rationale": "trace modal と workspace shell は説明責任と運用デバッグを担うため、UI 観点で独立記事化しやすい。",
@@ -287,9 +278,109 @@
       "source_id": "env-consistency-checks",
       "created_at": "2026-03-24T18:30:00+09:00",
       "status": "queued"
+    },
+    {
+      "proposed_slug": "semantic-paragraph-segmentation",
+      "proposed_title": "Semantic Paragraph Segmentation",
+      "rationale": "見出し境界だけでなく意味的な段落境界を利用したより精密な文脈切り出し手法。",
+      "interestingness_score": 0.82,
+      "source_id": "context-full-construction",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "context-deduplication-merge",
+      "proposed_title": "Context Deduplication Merge",
+      "rationale": "複数チャンクの context_full が重複する場合に統合して冗長性を排除する仕組み。",
+      "interestingness_score": 0.78,
+      "source_id": "context-full-construction",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "document-type-aware-context",
+      "proposed_title": "Document-Type Aware Context",
+      "rationale": "文書種別に応じて context_full の切り出し戦略を変える手法。",
+      "interestingness_score": 0.75,
+      "source_id": "context-full-construction",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "azure-ocr-usage-monitoring",
+      "proposed_title": "Azure OCR Usage Monitoring",
+      "rationale": "OCR API 利用量と課金の監視は Picture OCR Stage の運用コスト管理に直結する。",
+      "interestingness_score": 0.78,
+      "source_id": "picture-ocr-stage",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "image-preprocessing-parameters",
+      "proposed_title": "Image Preprocessing Parameters",
+      "rationale": "OCR 前の画像前処理パラメータは認識精度に直接影響する。",
+      "interestingness_score": 0.75,
+      "source_id": "picture-ocr-stage",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "ocr-confidence-tuning",
+      "proposed_title": "OCR Confidence Tuning",
+      "rationale": "信頼度閾値の調整は OCR テキストの採用基準を決める重要なパラメータである。",
+      "interestingness_score": 0.76,
+      "source_id": "picture-ocr-stage",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "priority-mode-drift-analysis",
+      "proposed_title": "Priority Mode Drift Analysis",
+      "rationale": "運用中に priority mode の効果が環境変化で劣化する問題の分析と対処法。",
+      "interestingness_score": 0.78,
+      "source_id": "optimization-priority-modes",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "per-request-priority-override",
+      "proposed_title": "Per-Request Priority Override",
+      "rationale": "リクエスト単位で priority mode を上書きする仕組みは柔軟な運用に必要。",
+      "interestingness_score": 0.76,
+      "source_id": "optimization-priority-modes",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "adaptive-mode-switching",
+      "proposed_title": "Adaptive Mode Switching",
+      "rationale": "負荷やレイテンシに応じて自動的に mode を切り替える適応型制御。",
+      "interestingness_score": 0.74,
+      "source_id": "optimization-priority-modes",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "mode-ab-testing-framework",
+      "proposed_title": "Mode A/B Testing Framework",
+      "rationale": "priority mode 間の効果をA/Bテストで比較する仕組み。",
+      "interestingness_score": 0.72,
+      "source_id": "optimization-priority-modes",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "status": "queued"
     }
   ],
   "history": [
+    {
+      "proposed_slug": "optimization-priority-modes",
+      "proposed_title": "Optimization Priority Modes",
+      "rationale": "quality / latency / cost の三つの optimize priority が budget の切り方をどう変えるかは独立に掘る価値がある。",
+      "interestingness_score": 0.85,
+      "source_id": "retrieval-round-policy",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:30:00+09:00"
+    },
     {
       "proposed_slug": "context-full-construction",
       "proposed_title": "Context Full Construction",

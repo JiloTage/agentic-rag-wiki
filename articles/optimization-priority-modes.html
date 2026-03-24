@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Optimization Priority Modes - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Optimization Priority Modes
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Optimization Priority Modes</h1>
+      <div class="article-meta">最終更新: 2026-03-24 18:30 JST</div>
+      <div class="article-summary">Optimization Priority Modes は、Project Diana の検索処理において「品質・速度・コスト」のどれを優先するかを切り替える仕組みである。normalize_optimize_priority() が環境変数から方針を読み取り、各ラウンドの検索予算（候補数や並べ替え回数）を調整する。Retrieval Round Policy と Retrieval Budgeting の間に位置し、検索全体のリソース配分を方向づける。</div>
+
+      <p><b>Optimization Priority Modes</b> は、<a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a> のチャット検索経路において、検索の「何を優先するか」を決定する設計パターンである。<a href="retrieval-round-policy.html">Retrieval Round Policy</a> がラウンドの進行順序を決め、<a href="retrieval-budgeting.html">Retrieval Budgeting</a> が全体の予算枠を管理するのに対し、Optimization Priority Modes はその予算をどの方向に傾けるかを制御する。具体的には <code>quality</code>（品質重視）、<code>latency</code>（速度重視）、<code>cost</code>（コスト重視）の 3 つのモードがあり、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の実行時にラウンドごとの候補数や再ランキング（並べ替え）の深さを変える。</p>
+
+      <h2 id="three-modes">3 つのモード</h2>
+      <p><code>normalize_optimize_priority()</code> 関数は、環境変数 <code>OPTIMIZE_PRIORITY</code> の値を読み取り、以下の 3 つのモードのいずれかに正規化する。</p>
+      <ul>
+        <li><strong>quality</strong> — 品質重視。<code>top_k_vector</code>（ベクトル検索の候補数）と <code>top_k_final</code>（最終出力数）をフルに使い、再ランキングも全候補に対して行う。応答時間やコストよりも、回答の正確さを最優先する。</li>
+        <li><strong>latency</strong> — 速度重視。候補数を標準の約 50% に削減し、再ランキングの深さも浅くする。ユーザーの待ち時間を短くしたい対話的なシナリオに向いている。</li>
+        <li><strong>cost</strong> — コスト重視。候補数を標準の約 33% に削減し、再ランキングをほぼスキップする。大量のバッチ処理や、検索精度よりも運用コストの最小化が求められる場面で使う。</li>
+      </ul>
+      <p>モード名が認識できない値だった場合、デフォルトで <code>quality</code> にフォールバックする。この挙動は <a href="env-consistency-checks.html">Env Consistency Checks</a> で事前に検出できるが、ランタイムでも安全側に倒すように設計されている。</p>
+
+      <h2 id="budget-interaction">予算との連携</h2>
+      <p>Optimization Priority Modes は単独で動くのではなく、<a href="retrieval-round-policy.html">Retrieval Round Policy</a> の <code>round_budget_snapshot()</code> の中で呼び出される。具体的な流れは次のとおりである。</p>
+      <ol>
+        <li><code>round_budget_snapshot()</code> が全体予算から使用済み分を差し引き、1 ラウンドあたりの基本予算を算出する。</li>
+        <li><code>normalize_optimize_priority()</code> が現在のモードを返す。</li>
+        <li>モードに応じた乗数（quality: 1.0、latency: 0.5、cost: 0.33）を基本予算に掛ける。</li>
+        <li>結果が <code>top_k_vector</code> と <code>top_k_final</code> として各検索呼び出しに渡される。</li>
+      </ol>
+      <p>この仕組みにより、<a href="retrieval-budgeting.html">Retrieval Budgeting</a> が定める全体枠の中で、モードが候補数の「密度」を変える役割を果たす。複数サブクエスチョンがある場合は <a href="multi-query-budget-splitting.html">Multi-Query Budget Splitting</a> がさらに分配を調整する。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 420" width="780" height="420">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <!-- Title -->
+          <text x="390" y="30" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#202122">Optimization Priority Modes と予算の関係</text>
+
+          <!-- Environment variable -->
+          <rect x="280" y="50" width="220" height="44" rx="8" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="390" y="77" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">OPTIMIZE_PRIORITY</text>
+
+          <line x1="390" y1="94" x2="390" y2="125" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+
+          <!-- normalize function -->
+          <rect x="250" y="125" width="280" height="44" rx="8" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="390" y="152" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">normalize_optimize_priority()</text>
+
+          <!-- Three mode boxes -->
+          <line x1="310" y1="169" x2="130" y2="210" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+          <line x1="390" y1="169" x2="390" y2="210" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+          <line x1="470" y1="169" x2="650" y2="210" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+
+          <rect x="40" y="210" width="180" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="130" y="237" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">quality</text>
+          <text x="130" y="257" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">乗数: 1.0</text>
+          <text x="130" y="273" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">再ランキング: 全候補</text>
+
+          <rect x="300" y="210" width="180" height="70" rx="10" fill="#fff8e1" stroke="#f0a000" stroke-width="2" />
+          <text x="390" y="237" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">latency</text>
+          <text x="390" y="257" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">乗数: 0.5</text>
+          <text x="390" y="273" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">再ランキング: 上位半分</text>
+
+          <rect x="560" y="210" width="180" height="70" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="650" y="237" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="bold" fill="#202122">cost</text>
+          <text x="650" y="257" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">乗数: 0.33</text>
+          <text x="650" y="273" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">再ランキング: スキップ</text>
+
+          <!-- Arrows to budget -->
+          <line x1="130" y1="280" x2="310" y2="330" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+          <line x1="390" y1="280" x2="390" y2="330" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+          <line x1="650" y1="280" x2="470" y2="330" stroke="#36c" stroke-width="2" marker-end="url(#arr)" />
+
+          <!-- Budget box -->
+          <rect x="260" y="330" width="260" height="50" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="390" y="352" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#202122">round_budget_snapshot()</text>
+          <text x="390" y="370" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">top_k_vector / top_k_final を決定</text>
+
+          <!-- Footer note -->
+          <text x="390" y="410" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#54595d">モードは環境変数で静的に設定され、ラウンドごとに切り替わるものではない</text>
+        </svg>
+        <div class="diagram-caption">環境変数 OPTIMIZE_PRIORITY から正規化関数を経て、各モードの乗数がラウンド予算に反映されるまでの流れ。</div>
+      </div>
+
+      <h2 id="env-config">環境変数と設定契約</h2>
+      <p><code>OPTIMIZE_PRIORITY</code> は <a href="env-contract-management.html">環境変数コントラクト管理</a> の <code>env/contract.json</code> に登録されるキーの一つである。<code>owner</code> は <code>chat</code>、<code>domain</code> は <code>retrieval</code> に分類される。許容値は <code>quality | latency | cost</code> の 3 択で、それ以外の値は <a href="env-consistency-checks.html">Env Consistency Checks</a> の CI ステップで検出される。</p>
+      <p>デプロイ先のプロファイルごとに異なる値を設定するには、<a href="env-profile-rendering.html">Env Profile Rendering</a> の profile override を使う。たとえば本番環境では <code>quality</code>、ステージング環境では <code>latency</code>、負荷テスト環境では <code>cost</code> といった使い分けが一般的である。</p>
+
+      <h3 id="env-validation">バリデーションの流れ</h3>
+      <p>設定値のバリデーション（検証）は 2 段階で行われる。第 1 段階は CI 時の静的チェックで、<code>check_env_consistency.py</code> が <code>contract.json</code> と profile override の整合性を確認する。第 2 段階はランタイムの <code>normalize_optimize_priority()</code> で、未知の値が渡された場合に <code>quality</code> へフォールバックしつつ、<code>validation_log</code> に警告を記録する。</p>
+
+      <h2 id="reranking">再ランキング深度の制御</h2>
+      <p>モードが最も大きく影響するのは再ランキング（reranking）のステップである。再ランキングとは、ベクトル検索で取得した候補を、より精度の高いモデルで並べ替える処理のことである。</p>
+      <ul>
+        <li><strong>quality モード</strong> — ベクトル検索の全候補（<code>top_k_vector</code> 件）を再ランキング対象にする。計算コストは高いが、最も正確な順位が得られる。</li>
+        <li><strong>latency モード</strong> — 上位 50% のみを再ランキング対象にする。Azure AI Search のスコアが高い候補だけに絞ることで、再ランキングの呼び出し時間を短縮する。</li>
+        <li><strong>cost モード</strong> — 再ランキングをスキップし、ベクトル検索のスコア（<code>azure_score</code>）をそのまま最終スコアとして使う。外部 API の呼び出し回数が減るため、コストを大幅に抑えられる。</li>
+      </ul>
+      <p>再ランキングの結果は <a href="workspace-trace-ui.html">Workspace Trace UI</a> でラウンドごとに確認できる。<a href="live-retrieval-lanes.html">Live Retrieval Lanes</a> のリアルタイム表示でも、どのモードで動作しているかがレーンのラベルに表示される。</p>
+
+      <h2 id="scoring">スコア計算への影響</h2>
+      <p>最終的なドキュメントの順位は <code>azure_score * (0.6 + 0.4 * subquestion_weight)</code> で計算される。この計算式自体はモードによって変わらないが、入力となる <code>azure_score</code> の精度がモードによって異なる。quality モードでは再ランキング後の精緻なスコアが使われるのに対し、cost モードではベクトル検索の粗いスコアがそのまま使われる。</p>
+      <p>そのため、cost モードでは同じクエリでも異なるドキュメントが上位に来る可能性がある。この差異を監視するには、<a href="priority-mode-drift-analysis.html">Priority Mode Drift Analysis</a>（モード間のスコア差異分析）を行い、品質劣化が許容範囲内かを定期的に確認する必要がある。</p>
+
+      <h2 id="system-position">システム全体での位置づけ</h2>
+      <p>Optimization Priority Modes は、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> の「何を検索するか」と <a href="retrieval-round-policy.html">Retrieval Round Policy</a> の「どの順番で検索するか」の間に位置し、「どの程度のリソースを使って検索するか」を決定する。この 3 つの仕組みが連携することで、<a href="split-deployment-rag.html">Split Deployment RAG</a> の検索経路は柔軟かつ制御可能になる。</p>
+      <p>運用面では、モードの切り替えはデプロイ単位で行われる。リクエストごとの動的な切り替えは現在サポートされていないが、将来的には <a href="per-request-priority-override.html">Per-Request Priority Override</a>（リクエスト単位の優先度上書き）や <a href="adaptive-mode-switching.html">Adaptive Mode Switching</a>（負荷に応じた自動切り替え）が検討されている。また、モードの効果を定量的に評価するために <a href="mode-ab-testing-framework.html">Mode A/B Testing Framework</a>（モード比較テスト基盤）の構築も議論されている。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#three-modes">3 つのモード</a></li>
+          <li><a href="#budget-interaction">予算との連携</a></li>
+          <li><a href="#env-config">環境変数と設定契約</a>
+            <ul><li><a href="#env-validation">バリデーションの流れ</a></li></ul>
+          </li>
+          <li><a href="#reranking">再ランキング深度の制御</a></li>
+          <li><a href="#scoring">スコア計算への影響</a></li>
+          <li><a href="#system-position">システム全体での位置づけ</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+          <li><a href="retrieval-budgeting.html">Retrieval Budgeting</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+          <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+          <li><a href="multi-query-budget-splitting.html">Multi-Query Budget Splitting</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="project-diana-agentic-rag.html">Project Diana Agentic RAG</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="retrieval-budgeting.html">Retrieval Budgeting</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="env-contract-management.html">環境変数コントラクト管理</a></li>
+        <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+        <li><a href="env-profile-rendering.html">Env Profile Rendering</a></li>
+        <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
+        <li><a href="multi-query-budget-splitting.html">Multi-Query Budget Splitting</a></li>
+        <li><a href="workspace-trace-ui.html">Workspace Trace UI</a></li>
+        <li><a href="live-retrieval-lanes.html">Live Retrieval Lanes</a></li>
+        <li><a href="priority-mode-drift-analysis.html">Priority Mode Drift Analysis</a></li>
+        <li><a href="per-request-priority-override.html">Per-Request Priority Override</a></li>
+        <li><a href="adaptive-mode-switching.html">Adaptive Mode Switching</a></li>
+        <li><a href="mode-ab-testing-framework.html">Mode A/B Testing Framework</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,14 +1,14 @@
 {
   "last_phase": "phase_2",
-  "last_run": "2026-03-24T18:08:07+09:00",
-  "total_articles": 10,
-  "queue_size": 25,
+  "last_run": "2026-03-24T18:30:00+09:00",
+  "total_articles": 13,
+  "queue_size": 35,
   "max_agents": 3,
   "max_total_articles": 50,
   "expansion_frontier": [
-    "retrieval-round-policy",
-    "azure-container-apps-topology",
-    "env-consistency-checks"
+    "context-full-construction",
+    "picture-ocr-stage",
+    "optimization-priority-modes"
   ],
   "settings": {
     "max_agents": 3,
@@ -17,5 +17,5 @@
     "language": "ja"
   },
   "created_at": "2026-03-24T17:33:23+09:00",
-  "updated_at": "2026-03-24T18:08:07+09:00"
+  "updated_at": "2026-03-24T18:30:00+09:00"
 }

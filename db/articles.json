@@ -28,6 +28,7 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "optimization-priority-modes",
         "picture-ocr-stage",
         "policy-enforced-retrieval",
         "retrieval-round-policy",
@@ -65,6 +66,7 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "optimization-priority-modes",
         "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
@@ -100,6 +102,8 @@
         "document-ingestion-pipeline",
         "env-consistency-checks",
         "env-profile-rendering",
+        "optimization-priority-modes",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
@@ -135,6 +139,7 @@
         "docling-hybrid-chunking",
         "env-consistency-checks",
         "env-contract-management",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
@@ -166,6 +171,7 @@
       "linked_from": [
         "document-ingestion-pipeline",
         "env-contract-management",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "split-deployment-rag"
@@ -203,6 +209,7 @@
         "env-consistency-checks",
         "env-contract-management",
         "env-profile-rendering",
+        "picture-ocr-stage",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
         "split-deployment-rag"
@@ -268,6 +275,7 @@
         "document-ingestion-pipeline",
         "env-consistency-checks",
         "env-contract-management",
+        "optimization-priority-modes",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "split-deployment-rag"
@@ -338,6 +346,7 @@
         "document-ingestion-pipeline",
         "env-contract-management",
         "env-profile-rendering",
+        "picture-ocr-stage",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
         "retrieval-round-policy",
@@ -355,10 +364,13 @@
       "origin": "expanded",
       "source_id": "document-ingestion-pipeline",
       "links_to": [
+        "azure-ocr-usage-monitoring",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline",
         "env-consistency-checks",
         "env-contract-management",
+        "image-preprocessing-parameters",
+        "ocr-confidence-tuning",
         "parse-mode-fallback",
         "policy-enforced-retrieval",
         "project-diana-agentic-rag",
@@ -366,6 +378,7 @@
         "workspace-trace-ui"
       ],
       "linked_from": [
+        "context-full-construction",
         "docling-hybrid-chunking",
         "document-ingestion-pipeline"
       ],
@@ -399,9 +412,40 @@
       "linked_from": [
         "docling-hybrid-chunking"
       ],
-      "expansion_status": "pending"
+      "expansion_status": "done"
+    },
+    "optimization-priority-modes": {
+      "slug": "optimization-priority-modes",
+      "title": "Optimization Priority Modes",
+      "filename": "articles/optimization-priority-modes.html",
+      "summary": "Optimization Priority Modes は、Project Diana の検索処理において quality・latency・cost の 3 モードで検索予算の配分を切り替える仕組みである。normalize_optimize_priority() が環境変数から方針を読み取り、各ラウンドの候補数や再ランキング深度を調整する。",
+      "created_at": "2026-03-24T18:30:00+09:00",
+      "updated_at": "2026-03-24T18:30:00+09:00",
+      "origin": "expanded",
+      "source_id": "retrieval-round-policy",
+      "links_to": [
+        "env-consistency-checks",
+        "env-contract-management",
+        "env-profile-rendering",
+        "live-retrieval-lanes",
+        "multi-query-budget-splitting",
+        "policy-enforced-retrieval",
+        "project-diana-agentic-rag",
+        "retrieval-budgeting",
+        "retrieval-round-policy",
+        "split-deployment-rag",
+        "workspace-trace-ui",
+        "priority-mode-drift-analysis",
+        "per-request-priority-override",
+        "adaptive-mode-switching",
+        "mode-ab-testing-framework"
+      ],
+      "linked_from": [
+        "retrieval-round-policy"
+      ],
+      "expansion_status": "done"
     }
   },
   "root_id": "project-diana-agentic-rag",
-  "total_count": 12
+  "total_count": 13
 }

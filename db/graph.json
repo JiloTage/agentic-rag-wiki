@@ -69,6 +69,27 @@
       "url": "articles/env-consistency-checks.html",
       "summary": "contract、catalog、base template、profile override の一致を検証する環境設定チェック。",
       "is_root": false
+    },
+    {
+      "id": "picture-ocr-stage",
+      "title": "Picture OCR Stage",
+      "url": "articles/picture-ocr-stage.html",
+      "summary": "ドキュメント内の画像から文字を読み取る処理ステージ。",
+      "is_root": false
+    },
+    {
+      "id": "context-full-construction",
+      "title": "Context Full Construction",
+      "url": "articles/context-full-construction.html",
+      "summary": "チャンクに見出し境界まで前後に広げた文脈テキスト（context_full）を組み立てる処理。",
+      "is_root": false
+    },
+    {
+      "id": "optimization-priority-modes",
+      "title": "Optimization Priority Modes",
+      "url": "articles/optimization-priority-modes.html",
+      "summary": "quality・latency・cost の 3 モードで検索予算の配分を切り替える最適化方針。",
+      "is_root": false
     }
   ],
   "links": [
@@ -375,6 +396,134 @@
     {
       "source": "split-deployment-rag",
       "target": "retrieval-round-policy"
+    },
+    {
+      "source": "context-full-construction",
+      "target": "docling-hybrid-chunking"
+    },
+    {
+      "source": "context-full-construction",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "context-full-construction",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "context-full-construction",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "context-full-construction",
+      "target": "retrieval-round-policy"
+    },
+    {
+      "source": "context-full-construction",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "context-full-construction",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "context-full-construction",
+      "target": "picture-ocr-stage"
+    },
+    {
+      "source": "docling-hybrid-chunking",
+      "target": "context-full-construction"
+    },
+    {
+      "source": "optimization-priority-modes",
+      "target": "retrieval-round-policy"
+    },
+    {
+      "source": "optimization-priority-modes",
+      "target": "retrieval-budgeting"
+    },
+    {
+      "source": "optimization-priority-modes",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "optimization-priority-modes",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "optimization-priority-modes",
+      "target": "env-consistency-checks"
+    },
+    {
+      "source": "optimization-priority-modes",
+      "target": "env-profile-rendering"
+    },
+    {
+      "source": "optimization-priority-modes",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "optimization-priority-modes",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "retrieval-round-policy",
+      "target": "optimization-priority-modes"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "document-ingestion-pipeline"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "project-diana-agentic-rag"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "split-deployment-rag"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "docling-hybrid-chunking"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "env-contract-management"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "parse-mode-fallback"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "policy-enforced-retrieval"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "workspace-trace-ui"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "env-consistency-checks"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "ocr-confidence-tuning"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "image-preprocessing-parameters"
+    },
+    {
+      "source": "picture-ocr-stage",
+      "target": "azure-ocr-usage-monitoring"
+    },
+    {
+      "source": "document-ingestion-pipeline",
+      "target": "picture-ocr-stage"
+    },
+    {
+      "source": "docling-hybrid-chunking",
+      "target": "picture-ocr-stage"
     }
   ]
 }

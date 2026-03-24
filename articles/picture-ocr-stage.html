@@ -124,7 +124,7 @@
         <li><code>context_full</code>: チャンクの文脈情報に画像の説明として <code>ocr_text</code> を含める</li>
         <li><code>picture_texts</code>: OCR 結果の原文を保持する配列フィールド。デバッグや再処理に使う</li>
       </ul>
-      <p>この統合により、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> でユーザーが画像内の用語を検索したとき、該当するチャンクが正しくヒットするようになります。たとえば、スライド内の図表に書かれた数値やラベルを検索キーワードとして使えます。</p>
+      <p>この統合により、<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> でユーザーが画像内の用語を検索したとき、該当するチャンクが正しくヒットするようになります。たとえば、スライド内の図表に書かれた数値やラベルを検索キーワードとして使えます。画像内テキストの検索精度をさらに高めるには、<a href="ocr-confidence-tuning.html">OCR Confidence Tuning</a>（信頼度スコアの調整手法）も参考になります。</p>
 
       <h2 id="configuration">設定と環境変数</h2>
       <p>Picture OCR Stage の動作は、<a href="env-contract-management.html">環境変数コントラクト管理</a> で定義された環境変数で制御します。主な設定項目は以下のとおりです。</p>
@@ -135,7 +135,7 @@
         <li><code>PICTURE_OCR_CONFIDENCE_THRESHOLD</code>: OCR 結果を採用する最低信頼度スコア</li>
         <li><code>PICTURE_OCR_TIMEOUT_SEC</code>: 1 画像あたりの OCR タイムアウト（秒）</li>
       </ul>
-      <p>これらの設定は <a href="split-deployment-rag.html">Split Deployment RAG</a> の job プロファイルにのみ含まれ、API や Web UI のプロファイルには不要です。<a href="env-consistency-checks.html">Env Consistency Checks</a> で、job プロファイルに必要な設定が漏れていないかを検証できます。</p>
+      <p>これらの設定は <a href="split-deployment-rag.html">Split Deployment RAG</a> の job プロファイルにのみ含まれ、API や Web UI のプロファイルには不要です。<a href="env-consistency-checks.html">Env Consistency Checks</a> で、job プロファイルに必要な設定が漏れていないかを検証できます。また、画像の前処理パラメータを細かく制御したい場合は <a href="image-preprocessing-parameters.html">Image Preprocessing Parameters</a>（画像前処理の設定項目）を、Azure OCR API の利用量を監視したい場合は <a href="azure-ocr-usage-monitoring.html">Azure OCR Usage Monitoring</a>（OCR 利用量の監視）を参照してください。</p>
     </main>
 
     <aside class="wiki-sidebar">
@@ -178,6 +178,9 @@
         <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
         <li><a href="split-deployment-rag.html">Split Deployment RAG</a></li>
         <li><a href="env-consistency-checks.html">Env Consistency Checks</a></li>
+        <li><a href="ocr-confidence-tuning.html">OCR Confidence Tuning</a></li>
+        <li><a href="image-preprocessing-parameters.html">Image Preprocessing Parameters</a></li>
+        <li><a href="azure-ocr-usage-monitoring.html">Azure OCR Usage Monitoring</a></li>
       </ul>
       <h4>被リンク</h4>
       <ul>
