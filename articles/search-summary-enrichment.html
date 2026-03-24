@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Summary Enrichment - Auto-Wiki</title>
+  <link rel="stylesheet" href="../assets/css/wiki.css">
+</head>
+<body>
+<div class="wiki-wrapper">
+  <header class="wiki-header">
+    <a href="../index.html" class="site-title">Auto-Wiki</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../index.html#article-list">記事一覧</a>
+      <a href="../index.html#graph">サイトグラフ</a>
+    </nav>
+  </header>
+
+  <div class="breadcrumb">
+    <a href="../index.html">Auto-Wiki</a> &gt; Search Summary Enrichment
+  </div>
+
+  <div class="wiki-content">
+    <main class="wiki-main">
+      <h1 class="article-title">Search Summary Enrichment</h1>
+      <div class="article-meta">最終更新: 2026-03-24 18:45 JST</div>
+      <div class="article-summary">Search Summary Enrichment は、チャンク分割の段階で検索結果表示に最適化された要約を別フィールドとして生成する設計である。検索ヒット一覧の表示品質とユーザーの選択精度を高め、RAG パイプライン全体の回答品質に寄与する。</div>
+
+      <p><b>Search Summary Enrichment</b> は、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> の工程で、チャンクのテキストから検索表示に最適化された要約を生成し、<code>search_text</code> フィールドとして別途保存する設計である。<a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a> の chunk ステージに組み込まれており、retrieval 結果の表示品質とユーザーの選択精度を高める。<a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> で取得されたチャンク群が最終的にユーザーへ提示される際、この要約がスニペット（検索結果の短い説明文）として使われる。</p>
+
+      <h2 id="motivation">なぜ要約を別フィールド化するのか</h2>
+      <p>チャンクの原文をそのまま検索結果に表示すると、いくつかの問題が起きる。まず、チャンクの先頭数百文字が必ずしも内容の要点を含んでいるとは限らない。表の途中や箇条書きの中間から始まるチャンクでは、文脈が欠けた断片が表示されてしまう。次に、原文が長すぎる場合に単純に切り詰めると、文の途中で途切れて読みにくくなる。</p>
+      <p>そこで、チャンク生成時に LLM（大規模言語モデル）を使って検索表示用の要約を別途生成し、<code>search_text</code> として保存する。この要約は 2〜3 文程度に圧縮され、チャンクの主題と結論を端的に伝える。<a href="context-full-construction.html">Context Full Construction</a> が回答生成用の広い文脈を担当するのに対し、search_text は検索結果一覧での「一目でわかる説明」を担当する。</p>
+
+      <h2 id="generation-flow">要約生成のフロー</h2>
+      <p>要約の生成は、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> がチャンクを組み立てた直後に行われる。具体的には以下の流れをたどる。</p>
+
+      <div class="diagram-container">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 420" width="880" height="420">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#36c" />
+            </marker>
+          </defs>
+
+          <!-- Step 1: Raw Chunk -->
+          <rect x="40" y="40" width="180" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="130" y="70" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">HybridChunker 出力</text>
+          <text x="130" y="90" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">raw chunk text</text>
+
+          <!-- Step 2: Heading + Context -->
+          <rect x="40" y="150" width="180" height="70" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="130" y="175" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">見出し・文脈付加</text>
+          <text x="130" y="198" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">search_headings 結合</text>
+
+          <!-- Step 3: LLM Summarization -->
+          <rect x="310" y="150" width="200" height="70" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="410" y="175" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">LLM 要約生成</text>
+          <text x="410" y="198" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">2〜3 文に圧縮</text>
+
+          <!-- Step 4: Keyword Extraction -->
+          <rect x="310" y="270" width="200" height="70" rx="10" fill="#f8f9fa" stroke="#a2a9b1" stroke-width="2" />
+          <text x="410" y="295" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">キーワード抽出</text>
+          <text x="410" y="318" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#54595d">search_keywords</text>
+
+          <!-- Step 5: Enriched Chunk -->
+          <rect x="610" y="150" width="220" height="120" rx="10" fill="#eaf3ff" stroke="#36c" stroke-width="2" />
+          <text x="720" y="185" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#202122">enriched chunk</text>
+          <line x1="635" y1="200" x2="805" y2="200" stroke="#a2a9b1" stroke-width="1" />
+          <text x="645" y="220" font-family="monospace" font-size="12" fill="#202122">search_text: "..."</text>
+          <text x="645" y="238" font-family="monospace" font-size="12" fill="#202122">search_keywords: [...]</text>
+          <text x="645" y="256" font-family="monospace" font-size="12" fill="#202122">context_full: "..."</text>
+
+          <!-- Arrows -->
+          <line x1="130" y1="110" x2="130" y2="150" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="220" y1="185" x2="310" y2="185" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="220" y1="185" x2="310" y2="305" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="510" y1="185" x2="610" y2="195" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+          <line x1="510" y1="305" x2="610" y2="245" stroke="#36c" stroke-width="2.5" marker-end="url(#arrow)" />
+
+          <!-- Labels -->
+          <text x="440" y="395" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#54595d">※ context_full は Context Full Construction で別途組み立てられる</text>
+        </svg>
+        <div class="diagram-caption">Search Summary Enrichment のデータフロー: HybridChunker の出力に見出し情報を付加し、LLM で要約とキーワードを生成して enriched chunk を構成する。</div>
+      </div>
+
+      <p>まず、<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> が文書構造に沿って分割したチャンクに、見出し階層（<code>search_headings</code>）を結合する。次に、このテキストを LLM に渡して 2〜3 文の要約を生成させ、<code>search_text</code> に格納する。同時にキーワードも抽出して <code>search_keywords</code> に保存する。最終的に、<a href="context-full-construction.html">Context Full Construction</a> で生成された <code>context_full</code> と合わせて、enriched chunk が完成する。</p>
+
+      <h2 id="design-principles">要約生成の設計原則</h2>
+      <p>search_text の生成にはいくつかの設計判断がある。</p>
+
+      <h3 id="conciseness">簡潔さと情報密度のバランス</h3>
+      <p>要約は短すぎると判断材料にならず、長すぎると検索一覧の画面を圧迫する。Project Diana では 2〜3 文、おおむね 80〜150 トークン程度を目安としている。プロンプトには「このチャンクが何について書かれているか、どんな結論・手順を含むかを短く述べよ」という指示が含まれる。</p>
+
+      <h3 id="heading-context">見出し文脈の活用</h3>
+      <p>要約生成の入力にはチャンク本文だけでなく、そのチャンクが属する見出し階層も含める。たとえば「セキュリティ &gt; アクセス制御 &gt; ロール定義」という見出しパスがあれば、要約にもその文脈が反映される。これにより、チャンク本文だけでは曖昧な内容でも、要約を読めばどの文脈の話かがわかるようになる。</p>
+
+      <h3 id="determinism">再現性への配慮</h3>
+      <p>LLM による要約生成は非決定的（同じ入力でも毎回少し異なる出力になりうる）だが、ingest のたびに結果が大きく変わるとインデックスの安定性に影響する。そのため、temperature（生成のランダム度合い）を低く設定し、できるだけ安定した出力を得る工夫をしている。</p>
+
+      <h2 id="retrieval-integration">Retrieval との統合</h2>
+      <p><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a> が検索を実行すると、ヒットしたチャンクの <code>search_text</code> が検索結果スニペットとして返される。<a href="retrieval-round-policy.html">Retrieval Round Policy</a> に従って複数ラウンドの検索が行われる場合、各ラウンドの結果にもこの要約が付く。ユーザーや LLM が「どのチャンクを回答に使うか」を判断するとき、原文全体を読まずとも search_text だけで取捨選択できるため、選択精度が上がり処理速度も向上する。</p>
+      <p>また、<a href="retrieval-round-policy.html">Retrieval Round Policy</a> の narrowing ラウンドでは、前のラウンドの search_text を参考にして次の検索クエリを組み立てることもある。つまり、search_text は表示だけでなく、検索の連鎖にも間接的に寄与する。</p>
+
+      <h2 id="keyword-synergy">キーワードとの相乗効果</h2>
+      <p>search_text と同時に抽出される <code>search_keywords</code> は、ベクトル検索（意味の近さで探す方法）を補完するキーワードベースのフィルタリングに使われる。たとえば、ユーザーが特定の製品名や規格番号で検索したとき、ベクトル検索だけでは類義語に引きずられて精度が落ちることがある。search_keywords にその製品名が含まれていれば、完全一致で絞り込める。</p>
+      <p><a href="picture-ocr-stage.html">Picture OCR Stage</a> で読み取った画像内のテキストも、キーワード抽出の対象に含まれる。図表のキャプションや画像内の数値がキーワードとして拾われることで、画像が主体の文書でも検索精度を維持できる。</p>
+
+      <h2 id="quality-feedback">品質の評価とフィードバック</h2>
+      <p>生成された search_text の品質は、検索結果のクリック率や回答の引用率で間接的に評価できる。<a href="summary-quality-scoring.html">Summary Quality Scoring</a>（要約品質スコアリング）の仕組みを導入すれば、要約の良し悪しを定量化し、プロンプトの改善に活かせる。</p>
+      <p>現在の設計では、要約生成は ingest 時の一度きりだが、将来的には <a href="incremental-re-enrichment.html">Incremental Re-Enrichment</a>（差分再エンリッチメント）により、検索パフォーマンスが低いチャンクだけを対象に要約を再生成する仕組みも検討されている。</p>
+      <p>また、検索要約の品質はチャンク分割の粒度にも依存する。<a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a> や <a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a> で適切なサイズに分割されていないと、要約の焦点がぼやけやすい。<a href="adaptive-summary-length.html">Adaptive Summary Length</a>（適応的要約長）の考え方では、チャンクの長さや複雑さに応じて要約の目標トークン数を動的に調整することで、この問題に対処する。</p>
+    </main>
+
+    <aside class="wiki-sidebar">
+      <div class="toc">
+        <div class="toc-title">目次</div>
+        <ul class="toc-list">
+          <li><a href="#motivation">なぜ要約を別フィールド化するのか</a></li>
+          <li><a href="#generation-flow">要約生成のフロー</a></li>
+          <li><a href="#design-principles">要約生成の設計原則</a>
+            <ul>
+              <li><a href="#conciseness">簡潔さと情報密度のバランス</a></li>
+              <li><a href="#heading-context">見出し文脈の活用</a></li>
+              <li><a href="#determinism">再現性への配慮</a></li>
+            </ul>
+          </li>
+          <li><a href="#retrieval-integration">Retrieval との統合</a></li>
+          <li><a href="#keyword-synergy">キーワードとの相乗効果</a></li>
+          <li><a href="#quality-feedback">品質の評価とフィードバック</a></li>
+        </ul>
+      </div>
+
+      <div class="related-articles">
+        <div class="related-title">関連記事</div>
+        <ul class="related-list">
+          <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+          <li><a href="context-full-construction.html">Context Full Construction</a></li>
+          <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+          <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+          <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wiki-footer">
+    <div class="footer-links">
+      <h4>リンク先</h4>
+      <ul>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="document-ingestion-pipeline.html">ドキュメント Ingest Pipeline</a></li>
+        <li><a href="policy-enforced-retrieval.html">Policy-Enforced Retrieval</a></li>
+        <li><a href="context-full-construction.html">Context Full Construction</a></li>
+        <li><a href="retrieval-round-policy.html">Retrieval Round Policy</a></li>
+        <li><a href="picture-ocr-stage.html">Picture OCR Stage</a></li>
+        <li><a href="chunk-oversize-splitting.html">Chunk Oversize Splitting</a></li>
+        <li><a href="summary-quality-scoring.html">Summary Quality Scoring</a></li>
+        <li><a href="incremental-re-enrichment.html">Incremental Re-Enrichment</a></li>
+        <li><a href="adaptive-summary-length.html">Adaptive Summary Length</a></li>
+      </ul>
+      <h4>被リンク</h4>
+      <ul>
+        <li><a href="docling-hybrid-chunking.html">Docling Hybrid Chunking</a></li>
+        <li><a href="context-full-construction.html">Context Full Construction</a></li>
+      </ul>
+    </div>
+    <p style="margin-top:12px;">Auto-Wiki で自動生成</p>
+  </footer>
+</div>
+</body>
+</html>

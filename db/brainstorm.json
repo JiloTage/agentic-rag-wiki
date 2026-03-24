@@ -1,33 +1,6 @@
 {
   "queue": [
     {
-      "proposed_slug": "workspace-trace-ui",
-      "proposed_title": "Workspace Trace UI",
-      "rationale": "trace modal と workspace shell は説明責任と運用デバッグを担うため、UI 観点で独立記事化しやすい。",
-      "interestingness_score": 0.84,
-      "source_id": "project-diana-agentic-rag",
-      "created_at": "2026-03-24T17:33:23+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "search-summary-enrichment",
-      "proposed_title": "Search Summary Enrichment",
-      "rationale": "検索結果用 summary を chunking 段階で別フィールド化する設計は retrieval 体験に直結する。",
-      "interestingness_score": 0.84,
-      "source_id": "docling-hybrid-chunking",
-      "created_at": "2026-03-24T17:53:58+09:00",
-      "status": "queued"
-    },
-    {
-      "proposed_slug": "job-scope-role-assignment",
-      "proposed_title": "Job Scope Role Assignment",
-      "rationale": "API identity に job resource スコープだけの権限を与える設計は split deployment の実運用に直結する。",
-      "interestingness_score": 0.84,
-      "source_id": "azure-container-apps-topology",
-      "created_at": "2026-03-24T18:08:07+09:00",
-      "status": "queued"
-    },
-    {
       "proposed_slug": "domain-index-integrity",
       "proposed_title": "Domain Index Integrity",
       "rationale": "contract の domain_index が key metadata と一致することを強制する設計は env governance の中核である。",
@@ -368,9 +341,66 @@
       "source_id": "optimization-priority-modes",
       "created_at": "2026-03-24T18:30:00+09:00",
       "status": "queued"
+    },
+    {
+      "proposed_slug": "summary-quality-scoring",
+      "proposed_title": "Summary Quality Scoring",
+      "rationale": "生成された search_text の品質を定量評価する仕組み。",
+      "interestingness_score": 0.82,
+      "source_id": "search-summary-enrichment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "incremental-re-enrichment",
+      "proposed_title": "Incremental Re-Enrichment",
+      "rationale": "検索パフォーマンスが低いチャンクだけを対象に要約を再生成する差分更新の仕組み。",
+      "interestingness_score": 0.78,
+      "source_id": "search-summary-enrichment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
+    },
+    {
+      "proposed_slug": "adaptive-summary-length",
+      "proposed_title": "Adaptive Summary Length",
+      "rationale": "チャンクの長さに応じて要約の目標トークン数を動的に調整する設計。",
+      "interestingness_score": 0.75,
+      "source_id": "search-summary-enrichment",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "status": "queued"
     }
   ],
   "history": [
+    {
+      "proposed_slug": "workspace-trace-ui",
+      "proposed_title": "Workspace Trace UI",
+      "rationale": "trace modal と workspace shell は説明責任と運用デバッグを担うため、UI 観点で独立記事化しやすい。",
+      "interestingness_score": 0.84,
+      "source_id": "project-diana-agentic-rag",
+      "created_at": "2026-03-24T17:33:23+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:45:00+09:00"
+    },
+    {
+      "proposed_slug": "search-summary-enrichment",
+      "proposed_title": "Search Summary Enrichment",
+      "rationale": "検索結果用 summary を chunking 段階で別フィールド化する設計は retrieval 体験に直結する。",
+      "interestingness_score": 0.84,
+      "source_id": "docling-hybrid-chunking",
+      "created_at": "2026-03-24T17:53:58+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:45:00+09:00"
+    },
+    {
+      "proposed_slug": "job-scope-role-assignment",
+      "proposed_title": "Job Scope Role Assignment",
+      "rationale": "API identity に job resource スコープだけの権限を与える設計は split deployment の実運用に直結する。",
+      "interestingness_score": 0.84,
+      "source_id": "azure-container-apps-topology",
+      "created_at": "2026-03-24T18:08:07+09:00",
+      "status": "created",
+      "moved_at": "2026-03-24T18:45:00+09:00"
+    },
     {
       "proposed_slug": "optimization-priority-modes",
       "proposed_title": "Optimization Priority Modes",

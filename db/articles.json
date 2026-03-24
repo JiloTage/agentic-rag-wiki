@@ -447,8 +447,64 @@
         "retrieval-round-policy"
       ],
       "expansion_status": "done"
+    },
+    "job-scope-role-assignment": {
+      "slug": "job-scope-role-assignment",
+      "title": "Job Scope Role Assignment",
+      "filename": "articles/job-scope-role-assignment.html",
+      "summary": "Job Scope Role Assignment は、API のマネージド ID に対し ingest job リソースだけを操作できる Contributor ロールを割り当てる設計パターンである。Bicep の roleAssignments でスコープを job 単体に絞ることで、最小権限の原則を実装する。",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "updated_at": "2026-03-24T18:45:00+09:00",
+      "origin": "expanded",
+      "source_id": "azure-container-apps-topology",
+      "links_to": [
+        "api-job-trigger-boundary",
+        "azure-container-apps-topology",
+        "bicep-idempotent-role-binding",
+        "custom-role-definition-patterns",
+        "document-ingestion-pipeline",
+        "env-consistency-checks",
+        "env-contract-management",
+        "env-profile-rendering",
+        "local-docker-compose-profile",
+        "project-diana-agentic-rag",
+        "role-assignment-audit-trail",
+        "split-deployment-rag"
+      ],
+      "linked_from": [
+        "azure-container-apps-topology",
+        "split-deployment-rag"
+      ],
+      "expansion_status": "done"
+    },
+    "search-summary-enrichment": {
+      "slug": "search-summary-enrichment",
+      "title": "Search Summary Enrichment",
+      "filename": "articles/search-summary-enrichment.html",
+      "summary": "Search Summary Enrichment は、チャンク分割の段階で検索結果表示に最適化された要約を別フィールドとして生成する設計である。検索ヒット一覧の表示品質とユーザーの選択精度を高め、RAG パイプライン全体の回答品質に寄与する。",
+      "created_at": "2026-03-24T18:45:00+09:00",
+      "updated_at": "2026-03-24T18:45:00+09:00",
+      "origin": "expanded",
+      "source_id": "docling-hybrid-chunking",
+      "links_to": [
+        "adaptive-summary-length",
+        "chunk-oversize-splitting",
+        "context-full-construction",
+        "docling-hybrid-chunking",
+        "document-ingestion-pipeline",
+        "incremental-re-enrichment",
+        "picture-ocr-stage",
+        "policy-enforced-retrieval",
+        "retrieval-round-policy",
+        "summary-quality-scoring"
+      ],
+      "linked_from": [
+        "context-full-construction",
+        "docling-hybrid-chunking"
+      ],
+      "expansion_status": "pending"
     }
   },
   "root_id": "project-diana-agentic-rag",
-  "total_count": 13
+  "total_count": 15
 }
